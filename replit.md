@@ -1,45 +1,21 @@
-# [Project name]
+# Sellify
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Global buy & sell marketplace (mobile-first web app). Core flow: user photographs an item → AI (OpenAI vision via Replit AI Integrations) generates the full listing (title, description, category, price suggestion) → user reviews editable cards → publishes → listing gets a public SEO page at /listing/:slug.
 
-## Run & Operate
-
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
-
-## Stack
-
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
-
-## Where things live
-
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
-
-## Architecture decisions
-
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
-
-## Product
-
-_Describe the high-level user-facing capabilities of this app once they exist._
+## Architecture
+- pnpm monorepo. Web frontend: `artifacts/sellify` (React + Vite + wouter + Tailwind, base path `/`). Backend: `artifacts/api-server` (Express 5, contract-first OpenAPI).
+- API contract: `lib/api-spec/openapi.yaml` → codegen (`pnpm --filter @workspace/api-spec run codegen`) → hooks in `@workspace/api-client-react`, Zod in `@workspace/api-zod`.
+- DB: Replit PostgreSQL + Drizzle (`lib/db/src/schema/index.ts`): profiles, categories, listings, favorites, conversations, messages. Push with `pnpm --filter @workspace/db run push`.
+- Auth: Replit-managed Clerk (cookie-based on web; proxy middleware in api-server). Profiles auto-created (JIT) from Clerk on first `/api/me` call.
+- Images: Replit Object Storage, presigned upload flow (`/api/storage/uploads/request-url`), served at `/api/storage/objects/...`. Client lib: `lib/object-storage-web` (Uppy v5).
+- AI: `@workspace/integrations-openai-ai-server`, model `gpt-5.6-terra`, `POST /api/ai/analyze` (images → listing draft JSON).
+- i18n: Swedish (default) + English via `artifacts/sellify/src/lib/i18n.tsx` + translations dictionary; persisted in localStorage, falls back to browser language.
+- Seed: `artifacts/api-server/scripts/seed.ts` (run with `pnpm --filter @workspace/api-server exec tsx scripts/seed.ts`); seed images in `artifacts/sellify/public/seed/`.
 
 ## User preferences
+- Communicate with the user in Swedish.
+- User is on the Replit iOS app: native Expo builds not possible in this session; mobile-friendly web first, native apps later.
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
-
-## Gotchas
-
-_Populate as you build — sharp edges, "always run X before Y" rules._
-
-## Pointers
-
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+## Notes
+- Express 5: no regex route params (`:id(\d+)` unsupported).
+- Spec priority (from attached Swedish spec): own marketplace + public listing pages first; external marketplace adapters, moderation/admin panel are future work.

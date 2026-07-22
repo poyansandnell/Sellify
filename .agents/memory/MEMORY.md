@@ -1,0 +1,1 @@
+- [Sellify build quirks](sellify-build-quirks.md) — Express 5 route-param limits, orval zod `format: uri` bug, no root react dep for pnpm overrides, browser-language i18n default.

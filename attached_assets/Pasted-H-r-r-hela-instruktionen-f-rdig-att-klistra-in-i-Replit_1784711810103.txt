@@ -1,0 +1,1112 @@
+Här är hela instruktionen, färdig att klistra in i Replit.
+
+Bygg en komplett global köp- och säljapp för iOS, Android och webben.
+
+Arbetsnamn: Sellify
+
+Namnet ska vara enkelt att byta senare.
+
+Övergripande mål
+
+Appen ska göra det extremt enkelt att sälja en produkt.
+
+Användaren ska i princip bara behöva:
+
+1. Ta några bilder.
+2. Kontrollera några kort som AI redan har fyllt i.
+3. Trycka på Publicera.
+
+När användaren publicerar ska produkten:
+
+* Publiceras i appens egen marknadsplats.
+* Få en egen offentlig webbsida.
+* Kunna hittas via Google.
+* Kunna delas i sociala medier.
+* Kunna publiceras eller förberedas för externa marknadsplatser där det är tekniskt och juridiskt möjligt.
+
+Den egna marknadsplatsen och de egna publika produktsidorna är viktigast.
+
+Appen ska inte kännas som ett långt annonsformulär. Den ska kännas som en AI-säljagent.
+
+Grundprincip
+
+Utgå från:
+
+Ta bilder → AI skapar annonsen → Kontrollera → Publicera
+
+Det ska gå att skapa en annons på mindre än en minut.
+
+Användaren ska inte behöva skriva en lång beskrivning, välja bland komplicerade kategorier eller fylla i många tekniska fält.
+
+AI ska göra så mycket som möjligt automatiskt.
+
+Plattformar
+
+Bygg appen för:
+
+* iOS.
+* Android.
+* Webb.
+* Publika webbsidor för varje annons.
+* Administrationspanel för webben.
+
+Använd ett gemensamt monorepo.
+
+Rekommenderad teknik
+
+Använd:
+
+* Expo.
+* React Native.
+* Expo Router.
+* TypeScript.
+* Next.js för den publika webbplatsen och SEO-sidorna.
+* Node.js-backend.
+* PostgreSQL.
+* Drizzle ORM.
+* Objektlagring för bilder.
+* Säker autentisering.
+* Pushnotiser.
+* Bakgrundsjobb för bildbehandling, AI, översättning och SEO.
+* Ett tydligt API-lager mellan apparna och backend.
+
+Webbplatsen ska vara serverrenderad eller statiskt genererad där det passar, så att Google kan läsa alla publika annonssidor ordentligt.
+
+Använd inte mockdata i den färdiga versionen. Alla centrala funktioner ska använda riktig databas och riktig backend.
+
+Global app
+
+Appen ska byggas global från början.
+
+Samma tekniska motor ska användas i alla länder.
+
+Appen ska automatiskt upptäcka:
+
+* Enhetens språk.
+* Land.
+* Lokal valuta.
+* Tidszon.
+* Datumformat.
+* Nummerformat.
+* Måttenheter.
+* Landskod för telefonnummer.
+
+Användaren ska alltid kunna ändra:
+
+* Språk.
+* Land.
+* Valuta.
+* Avståndsenhet.
+
+Språk
+
+Första fullt färdiga språk:
+
+* Svenska.
+* Engelska.
+
+Svenska ska vara komplett och naturlig för användare i Sverige.
+
+Engelska ska vara komplett för internationell användning.
+
+Bygg språkstödet så att nya språk kan läggas till utan att komponenter eller affärslogik behöver skrivas om.
+
+Ingen synlig text får hårdkodas direkt i komponenterna.
+
+Stöd även framtida:
+
+* Höger-till-vänster-språk.
+* Arabiska tecken.
+* Asiatiska tecken.
+* Längre tyska texter.
+* Lokala datum- och nummerformat.
+* Lokala adressformat.
+
+Lokal marknadsplats
+
+Alla annonser ska ligga i samma globala system men kopplas till:
+
+* Land.
+* Region.
+* Stad.
+* Postnummer när det finns.
+* Valuta.
+* Originalspråk.
+* Kategori.
+* Säljarens valda försäljningsområde.
+
+Som standard ska användaren se annonser i sitt eget land och i närheten.
+
+Användaren ska kunna välja:
+
+* Nära mig.
+* Hela landet.
+* Andra länder.
+* Global sökning.
+
+Priser ska alltid visas med annonsens riktiga valuta.
+
+En ungefärlig valutakonvertering får visas, men originalpris och originalvaluta ska alltid vara tydliga.
+
+Design
+
+Designen ska vara:
+
+* Mycket enkel.
+* Modern.
+* Ljus och luftig.
+* Bilddriven.
+* Snabb.
+* Tydlig.
+* Anpassad för personer som inte är tekniska.
+
+Använd:
+
+* Stora produktbilder.
+* Rundade kort.
+* Tydliga rubriker.
+* Stora knappar.
+* Få val per skärm.
+* Tydlig typografi.
+* Bra kontrast.
+* Tillgänglig design.
+
+Undvik:
+
+* Långa formulär.
+* Små knappar.
+* För många menyer.
+* Komplicerade filter.
+* Tekniska ord.
+* Onödiga steg.
+
+Huvudnavigation
+
+Använd en enkel nedersta meny med:
+
+* Hem.
+* Sälj.
+* Meddelanden.
+* Mina annonser.
+* Profil.
+
+Knappen Sälj ska vara tydligt markerad och central.
+
+Startsida
+
+Startsidan ska innehålla:
+
+* Sökfält.
+* Vald plats eller område.
+* Kategorier.
+* Rekommenderade produkter.
+* Nya produkter.
+* Produkter nära användaren.
+* Senast visade produkter.
+* Sparade sökningar när användaren är inloggad.
+
+Produktkorten ska visa:
+
+* Huvudbild.
+* Titel.
+* Pris.
+* Ort.
+* Tid sedan publicering.
+* Favoritknapp.
+
+Produkter ska visas i ett tydligt tvåkolumnsflöde på mobil och i fler kolumner på större skärmar.
+
+Skapa en annons
+
+När användaren trycker på Sälj ska kameran eller bildväljaren öppnas direkt.
+
+Användaren ska kunna:
+
+* Ta en eller flera bilder.
+* Välja bilder från telefonen.
+* Ändra bildordning.
+* Beskära bilder.
+* Rotera bilder.
+* Ta bort bilder.
+* Lägga till fler bilder.
+
+Tillåt exempelvis upp till 12 bilder per annons.
+
+Den första bilden blir huvudbild.
+
+AI-analys av produkten
+
+När bilderna har valts ska AI analysera dem.
+
+AI ska försöka identifiera:
+
+* Produkttyp.
+* Varumärke.
+* Modell.
+* Färg.
+* Material.
+* Kategori.
+* Skick.
+* Ungefärlig ålder.
+* Relevanta egenskaper.
+* Synliga skador eller slitage.
+* Serienummer eller modellnummer när det är lämpligt.
+* Om flera olika produkter av misstag finns i samma annons.
+
+AI ska därefter skapa:
+
+* Rubrik.
+* Kort beskrivning.
+* Längre beskrivning.
+* Kategori.
+* Underkategori.
+* Rekommenderat pris.
+* Prisintervall.
+* Relevanta specifikationer.
+* Sökord.
+* SEO-titel.
+* Meta-beskrivning.
+* URL-vänlig slug.
+* Förslag på leveransalternativ.
+
+AI ska vara försiktig och aldrig hitta på säkra produktuppgifter som inte går att avgöra från bilderna.
+
+Osäkra uppgifter ska markeras som förslag.
+
+Extremt enkel kontroll före publicering
+
+Efter AI-analysen ska användaren se några få stora kort.
+
+Kort 1: Bilder
+
+Visa alla bilder.
+
+Användaren kan:
+
+* Ändra ordning.
+* Ta bort.
+* Lägga till.
+* Välja huvudbild.
+
+Kort 2: Produkten
+
+Visa:
+
+* Rubrik.
+* Kategori.
+* Varumärke.
+* Modell.
+* Skick.
+
+Allt är redan ifyllt av AI.
+
+Användaren kan trycka på ett fält för att ändra.
+
+Kort 3: Pris
+
+Visa:
+
+* Rekommenderat pris.
+* Föreslaget prisintervall.
+* Valuta.
+* Val för fast pris eller bud.
+
+Användaren kan skriva ett annat pris.
+
+Kort 4: Beskrivning
+
+Visa den AI-genererade beskrivningen.
+
+Användaren ska enkelt kunna:
+
+* Redigera.
+* Korta ner.
+* Göra den mer personlig.
+* Generera om den.
+
+Kort 5: Plats och leverans
+
+Visa:
+
+* Ort.
+* Ungefärligt område.
+* Upphämtning.
+* Frakt.
+* Möjlighet att erbjuda båda.
+
+Exakt hemadress ska aldrig visas offentligt.
+
+Kort 6: Kontakt
+
+Visa säljarens valda kontaktvägar:
+
+* Chatt i appen.
+* Telefonnummer.
+* E-post.
+* Extern kontaktlänk.
+
+Intern chatt ska vara förvalt.
+
+Privata kontaktuppgifter ska vara dolda som standard.
+
+Kort 7: Publicering
+
+Visa tydligt var annonsen ska publiceras:
+
+* Sellifys egen marknadsplats.
+* Egen offentlig webbsida.
+* Externa marknadsplatser som användaren har kopplat.
+
+Avsluta med en stor knapp:
+
+Publicera nu
+
+Publicering
+
+När användaren trycker på Publicera nu ska systemet:
+
+1. Validera annonsen.
+2. Moderera text och bilder.
+3. Optimera bilderna.
+4. Spara originalbilder.
+5. Skapa olika bildstorlekar.
+6. Publicera annonsen i appen.
+7. Skapa en offentlig produktsida på webben.
+8. Uppdatera sitemap.
+9. Skapa delningsbild.
+10. Skicka annonsen till valda externa integrationer där det är möjligt.
+11. Visa en tydlig bekräftelse.
+
+Efter publicering ska användaren se:
+
+* Länk till annonsen.
+* Dela-knapp.
+* Antal visningar.
+* Favoriter.
+* Meddelanden.
+* Status på externa publiceringar.
+
+Egen webbsida för varje produkt
+
+Varje offentlig annons ska automatiskt få en egen SEO-optimerad webbsida.
+
+Exempel:
+
+* sellify.com/sv-se/annons/kukirin-g4-katrineholm-abc123
+* sellify.com/en-us/listing/iphone-15-pro-stockholm-abc123
+
+Sidan ska innehålla:
+
+* Produktens titel.
+* Stora bilder.
+* Pris.
+* Beskrivning.
+* Skick.
+* Specifikationer.
+* Ort.
+* Leveransalternativ.
+* Säljarinformation.
+* Kontaktknapp.
+* Spara-knapp.
+* Dela-knapp.
+* Liknande produkter.
+* Fler produkter från samma säljare.
+* Brödsmulor.
+* Kategori.
+* Datum för publicering och uppdatering.
+
+Sidan ska vara snabb, mobilanpassad och läsbar utan inloggning.
+
+Besökare från Google ska kunna se annonsen direkt.
+
+SEO-motor
+
+Bygg en ordentlig SEO-motor.
+
+Varje aktiv offentlig annons ska få:
+
+* Unik sidtitel.
+* Unik meta-beskrivning.
+* Canonical URL.
+* Open Graph-data.
+* Twitter Card-data.
+* Schema.org Product.
+* Schema.org Offer.
+* Strukturerad information om pris, valuta, skick och tillgänglighet.
+* Automatiskt genererad sitemap.
+* Automatiskt genererade bild-sitemaps där det är lämpligt.
+* Hreflang för språk- och landsversioner.
+* Indexerbar HTML.
+* Bra interna länkar.
+* Kategori- och ortssidor.
+
+Skapa även indexerbara landningssidor för exempelvis:
+
+* Begagnade cyklar i Stockholm.
+* Mobiler i Göteborg.
+* Barnvagnar i Malmö.
+* Möbelannonser i Katrineholm.
+* Used phones in London.
+* Second-hand furniture in Berlin.
+
+Dessa sidor ska byggas från riktiga aktiva annonser och inte vara tomma eller artificiella.
+
+Skapa inga tunna sidor enbart för att manipulera Google.
+
+Indexera endast sidor som har verkligt innehåll och relevanta annonser.
+
+Språkversioner av annonser
+
+Spara alltid:
+
+* Originalspråk.
+* Originalrubrik.
+* Originalbeskrivning.
+* Strukturerade produktuppgifter.
+* Översättningar separat.
+
+AI ska kunna översätta:
+
+* Rubrik.
+* Beskrivning.
+* Specifikationer.
+* Kategori.
+* SEO-information.
+
+Produktnamn, modellnamn, varumärken och serienummer får inte felöversättas.
+
+Visa tydligt när en text är AI-översatt.
+
+Ge användaren möjlighet att visa originaltexten.
+
+Skapa inte automatiskt hundratals språkversioner av varje annons.
+
+Skapa endast språkversioner för:
+
+* Appens aktiva språk.
+* Länder där annonsen är relevant.
+* Språk som faktiskt används av besökare.
+* Språk som administratören aktiverat.
+
+Kategori- och ortssidor
+
+Skapa publika SEO-sidor för:
+
+* Länder.
+* Regioner.
+* Städer.
+* Kategorier.
+* Underkategorier.
+* Kombinationer av kategori och ort där det finns tillräckligt många annonser.
+
+Exempel:
+
+* /sv-se/sverige/mobiler
+* /sv-se/stockholm/cyklar
+* /sv-se/katrineholm/mobler
+* /en-gb/london/phones
+
+Sidorna ska visa:
+
+* Relevanta annonser.
+* Filter.
+* Kort introduktion.
+* Relaterade kategorier.
+* Närliggande orter.
+* Populära sökningar.
+
+Delning
+
+Varje annons ska kunna delas via:
+
+* SMS.
+* E-post.
+* WhatsApp.
+* Messenger.
+* Facebook.
+* Instagram.
+* X.
+* Telegram.
+* Kopiera länk.
+* Systemets vanliga delningsmeny.
+
+Skapa automatiskt en snygg delningsbild med:
+
+* Produktbild.
+* Titel.
+* Pris.
+* Sellify-logotyp.
+* Kort länk.
+
+Stöd deep links så att länken öppnar appen när den finns installerad och annars öppnar webbsidan.
+
+Externa marknadsplatser
+
+Bygg ett adaptersystem för externa marknadsplatser.
+
+Varje marknadsplats ska ha en separat adapter så att integrationer kan läggas till eller tas bort utan att kärnan ändras.
+
+Stöd tre nivåer:
+
+Nivå 1: Full API-publicering
+
+När marknadsplatsen erbjuder ett godkänt API ska appen kunna:
+
+* Skapa annons.
+* Uppdatera annons.
+* Ändra pris.
+* Markera såld.
+* Ta bort annons.
+* Synkronisera status.
+* Läsa eventuella fel.
+
+Nivå 2: Partnerintegration
+
+Om avtal eller partnergodkännande krävs ska integrationen vara förberedd men bara aktiveras när nödvändiga avtal och nycklar finns.
+
+Nivå 3: Guidad publicering
+
+Om automatisk publicering inte är tillåten ska appen:
+
+* Skapa färdig rubrik.
+* Skapa färdig beskrivning.
+* Förbereda bilder.
+* Kopiera text till urklipp.
+* Öppna rätt marknadsplats eller app.
+* Guida användaren genom sista steget.
+
+Försök inte kringgå regler genom scraping, automatiserad webbläsare eller förbjuden inloggningsautomation.
+
+Bygg integrationer endast genom officiella API:er eller tillåtna flöden.
+
+Förbered adaptrar för exempelvis:
+
+* eBay.
+* Blocket.
+* Tradera.
+* Etsy.
+* Shopify.
+* WooCommerce.
+* Facebook Marketplace som guidat flöde där officiell automatisk publicering saknas.
+* Lokala marknadsplatser i olika länder.
+
+Visa alltid tydligt för användaren vilka marknadsplatser som är anslutna.
+
+Användaren måste själv godkänna anslutningen första gången.
+
+Konton och registrering
+
+Gör registreringen mycket enkel.
+
+Stöd:
+
+* Sign in with Apple.
+* Google-inloggning.
+* Telefonnummer med engångskod.
+* E-post och lösenord som reserv.
+
+Användaren ska kunna titta på annonser utan konto.
+
+Konto ska krävas när användaren:
+
+* Publicerar.
+* Skickar meddelande.
+* Sparar favoriter.
+* Kopplar externa marknadsplatser.
+
+Information från telefonen
+
+Appen får använda information från telefonen endast efter tydligt tillstånd.
+
+Appen kan föreslå:
+
+* Namn från användarens konto.
+* Telefonnummer.
+* E-post.
+* Land.
+* Språk.
+* Ungefärlig plats.
+* Bilder från bildbiblioteket.
+
+Hämta inte hela kontaktlistan för att skapa en profil.
+
+Publicera aldrig automatiskt:
+
+* Exakt hemadress.
+* Privat telefonnummer.
+* Privat e-postadress.
+* Kontaktlista.
+* Exakt GPS-position.
+
+Användaren ska aktivt välja vilka kontaktuppgifter som visas.
+
+Som standard:
+
+* Visa bara förnamn eller valt profilnamn.
+* Visa ort.
+* Använd intern chatt.
+* Dölj telefonnummer.
+* Dölj e-post.
+* Dölj exakt adress.
+
+Profil
+
+Säljarprofilen ska innehålla:
+
+* Profilbild.
+* Visningsnamn.
+* Ort.
+* Medlem sedan.
+* Verifieringar.
+* Omdömen.
+* Aktiva annonser.
+* Sålda produkter.
+* Svarstid.
+* Valda kontaktvägar.
+
+Skapa även en publik profilsida:
+
+* sellify.com/@anvandarnamn
+
+Den ska kunna visa säljarens offentliga annonser.
+
+Meddelanden
+
+Bygg en enkel intern chatt.
+
+Stöd:
+
+* Textmeddelanden.
+* Bilder.
+* Snabbsvar.
+* Pushnotiser.
+* Markera som läst.
+* Blockera användare.
+* Rapportera användare.
+* Koppling till specifik annons.
+
+Förslag på snabbsvar:
+
+* Finns den kvar?
+* Kan du skicka?
+* Kan jag hämta idag?
+* Kan du gå ner i pris?
+* Var kan den hämtas?
+
+Dela inte exakt adress automatiskt i chatten.
+
+Favoriter och bevakningar
+
+Användaren ska kunna:
+
+* Spara annonser.
+* Spara sökningar.
+* Bevaka kategori.
+* Bevaka ort.
+* Bevaka pris.
+* Få notis när nya relevanta produkter publiceras.
+* Få notis vid prissänkning.
+
+Sökning
+
+Bygg en snabb sökmotor med stöd för:
+
+* Fritext.
+* Kategori.
+* Pris.
+* Plats.
+* Avstånd.
+* Skick.
+* Frakt eller upphämtning.
+* Publiceringsdatum.
+* Varumärke.
+* Modell.
+* Land.
+
+Sökningen ska förstå vanliga felskrivningar och synonymer.
+
+AI får hjälpa till att tolka sökningar som:
+
+* Billig barnvagn nära mig.
+* Begagnad iPhone under 5 000 kronor.
+* Soffa i Katrineholm som kan hämtas idag.
+
+Prisförslag
+
+AI ska föreslå pris baserat på:
+
+* Produkt.
+* Modell.
+* Skick.
+* Ålder.
+* Marknad.
+* Land.
+* Lokal valuta.
+* Liknande annonser i den egna databasen.
+* Externa datakällor endast där användning är tillåten.
+
+Visa alltid att priset är ett förslag.
+
+Användaren bestämmer slutligt pris.
+
+Försäljningsagent
+
+Efter publicering ska appen fungera som en enkel AI-säljagent.
+
+Den kan föreslå:
+
+* Förbättrad rubrik.
+* Bättre huvudbild.
+* Nytt pris.
+* Prissänkning.
+* Fler bilder.
+* Delning.
+* Publicering på ytterligare marknadsplatser.
+* Svar på vanliga frågor.
+
+Den får aldrig ändra pris eller publicera externt utan att användaren har godkänt det eller aktiverat en tydlig automatisk regel.
+
+Exempel på frivilliga regler:
+
+* Sänk priset med 5 procent efter 14 dagar.
+* Skicka ett förslag innan prissänkning.
+* Förnya annonsen efter 30 dagar.
+* Markera som såld på alla anslutna marknadsplatser.
+
+Såld produkt
+
+När en produkt säljs ska användaren kunna trycka på:
+
+Markera som såld
+
+Systemet ska då:
+
+* Markera annonsen som såld.
+* Stoppa nya köpmeddelanden.
+* Uppdatera externa marknadsplatser där det är möjligt.
+* Ta bort annonsen från aktiva sökresultat.
+* Behålla statistik.
+* Fråga var produkten såldes.
+* Be köpare och säljare lämna omdöme där det är relevant.
+
+Den publika sidan kan under en begränsad tid visa:
+
+* Produkten är såld.
+* Liknande aktiva produkter.
+* Säljarens andra annonser.
+
+Efter en konfigurerbar period ska sidan antingen:
+
+* Omdirigeras till relevant kategori.
+* Behållas som arkiv utan indexering.
+* Tas bort från sökmotorernas index.
+
+Moderering och säkerhet
+
+Bygg automatiserad och manuell moderering.
+
+Kontrollera:
+
+* Förbjudna produkter.
+* Bedrägerier.
+* Stulna bilder.
+* Dubbletter.
+* Spam.
+* Felaktiga priser.
+* Kontaktuppgifter i bilder eller beskrivningar.
+* Hot.
+* Trakasserier.
+* Nakenhet.
+* Olagligt innehåll.
+* Förfalskade varor.
+
+Ge användaren tydlig information om varför en annons stoppas.
+
+Bygg funktioner för:
+
+* Rapportera annons.
+* Rapportera användare.
+* Blockera användare.
+* Granska överklaganden.
+* Administrativ avstängning.
+* Riskmarkering.
+
+Betalning
+
+Första versionen kan fungera utan inbyggd betalning.
+
+Förbered dock arkitekturen för framtida:
+
+* Betalning i appen.
+* Köparskydd.
+* Fraktetiketter.
+* Utbetalningar.
+* Provision.
+* Återbetalningar.
+* Tvister.
+
+Aktivera inte betalning utan korrekt juridisk, skattemässig och regulatorisk lösning för respektive land.
+
+Frakt
+
+Stöd i första versionen:
+
+* Upphämtning.
+* Säljaren ordnar frakt.
+* Köparen och säljaren kommer överens.
+
+Förbered adaptrar för framtida fraktleverantörer per land.
+
+Visa aldrig exakt upphämtningsadress offentligt.
+
+Adminpanel
+
+Bygg en säker webbaserad adminpanel.
+
+Admin ska kunna:
+
+* Se användare.
+* Se annonser.
+* Söka.
+* Filtrera.
+* Moderera annonser.
+* Stänga av användare.
+* Hantera rapporter.
+* Hantera kategorier.
+* Hantera språk.
+* Hantera länder.
+* Hantera valutor.
+* Hantera externa marknadsplatser.
+* Hantera SEO-sidor.
+* Se statistik.
+* Se systemfel.
+* Se publiceringsfel.
+* Hantera förbjudna ord och produkter.
+* Aktivera eller inaktivera funktioner per land.
+
+Använd rollbaserade behörigheter.
+
+Datamodell
+
+Skapa tydliga tabeller för minst:
+
+* Users.
+* Profiles.
+* UserVerifications.
+* Countries.
+* Languages.
+* Currencies.
+* Regions.
+* Cities.
+* Categories.
+* CategoryTranslations.
+* Listings.
+* ListingTranslations.
+* ListingImages.
+* ListingAttributes.
+* ListingPrices.
+* ListingLocations.
+* ListingShippingOptions.
+* ListingContactOptions.
+* MarketplaceConnections.
+* MarketplacePublications.
+* MarketplacePublicationErrors.
+* Favorites.
+* SavedSearches.
+* Conversations.
+* Messages.
+* Reports.
+* Reviews.
+* Notifications.
+* SeoPages.
+* SitemapEntries.
+* ModerationCases.
+* AuditLogs.
+
+Alla tabeller ska ha lämpliga index, tidsstämplar och tydliga relationer.
+
+Bildhantering
+
+När bilder laddas upp:
+
+* Spara originalet privat eller säkert.
+* Skapa webboptimerade versioner.
+* Skapa miniatyrer.
+* Ta bort onödig metadata.
+* Korrigera rotation.
+* Komprimera utan tydlig kvalitetsförlust.
+* Använd moderna format där det stöds.
+* Lägg till alt-text.
+* Kontrollera skadligt innehåll.
+* Kontrollera dubbletter.
+
+Förstör inte originalbilden.
+
+AI-bildförbättring får inte förändra produktens verkliga skick.
+
+Det är tillåtet att:
+
+* Förbättra ljus.
+* Beskära.
+* Räta upp.
+* Ta bort neutral bakgrund om användaren väljer det.
+
+Det är inte tillåtet att:
+
+* Ta bort repor.
+* Dölja skador.
+* Ändra färg.
+* Lägga till delar som saknas.
+
+Statistik för säljaren
+
+Visa för varje annons:
+
+* Visningar.
+* Besök från Google.
+* Besök från delningar.
+* Favoriter.
+* Meddelanden.
+* Klick på kontakt.
+* Externa publiceringar.
+* Status.
+* Tid sedan publicering.
+
+Visa enkla AI-förslag baserat på statistiken.
+
+Exempel:
+
+* Många visningar men få meddelanden. Priset kan vara för högt.
+* Första bilden kan förbättras.
+* Lägg till fler bilder.
+* Din annons får trafik från Google.
+
+Analys
+
+Implementera integritetsvänlig analys för:
+
+* Registrering.
+* Skapade annonser.
+* Publicerade annonser.
+* Avbrutna publiceringsflöden.
+* Sökningar.
+* Klick.
+* Meddelanden.
+* Sålda produkter.
+* Trafikkällor.
+* SEO-trafik.
+* Externa marknadsplatser.
+
+Samla inte in mer personuppgifter än vad som behövs.
+
+Juridik och integritet
+
+Förbered sidor och flöden för:
+
+* Användarvillkor.
+* Integritetspolicy.
+* Cookieinställningar.
+* Communityregler.
+* Förbjudna varor.
+* Rapporteringsprocess.
+* Radering av konto.
+* Export av användardata.
+* Samtycken.
+* Minderåriga användare.
+* Landsspecifika regler.
+
+Följ principerna om dataminimering.
+
+Be endast om behörigheter när de behövs.
+
+Förklara tydligt varför en behörighet behövs.
+
+Prestanda
+
+Appen ska:
+
+* Starta snabbt.
+* Fungera bra på långsamma nätverk.
+* Ladda bilder stegvis.
+* Cachera relevant innehåll.
+* Ha skeleton-laddning.
+* Inte blockera gränssnittet under AI-analys.
+* Kunna återuppta en påbörjad annons.
+* Spara utkast automatiskt.
+* Hantera uppladdningsfel utan att förlora data.
+
+Tillgänglighet
+
+Bygg enligt moderna tillgänglighetsprinciper.
+
+Stöd:
+
+* Skärmläsare.
+* Dynamisk textstorlek.
+* Tydliga fokuslägen.
+* Tillräcklig kontrast.
+* Beskrivande knappar.
+* Tangentbordsnavigering på webben.
+* Alt-texter för bilder.
+
+Första lanseringsversionen
+
+Prioritera en fungerande MVP med:
+
+1. Svenska och engelska.
+2. iOS, Android och webb.
+3. Konto med Apple, Google och telefonnummer.
+4. Skapa annons från bilder.
+5. AI-genererad rubrik, beskrivning, kategori och prisförslag.
+6. Enkel kontroll i kort.
+7. Publicering i den egna marknadsplatsen.
+8. Egen offentlig webbsida för varje produkt.
+9. SEO-motor.
+10. Sökning.
+11. Favoriter.
+12. Intern chatt.
+13. Mina annonser.
+14. Markera som såld.
+15. Delning.
+16. Grundläggande moderering.
+17. Adminpanel.
+18. Adaptersystem för externa marknadsplatser.
+
+Den egna marknadsplatsen och SEO-webbplatsen ska fungera helt innan avancerade externa integrationer prioriteras.
+
+Viktig utvecklingsprincip
+
+Bygg inte en stor mängd halvfärdiga funktioner.
+
+Bygg först hela kärnflödet ordentligt:
+
+Bild → AI-analys → Kontroll → Publicering → Egen webbsida → Google → Meddelande → Såld
+
+Detta flöde ska fungera från början till slut med riktig databas och backend.
+
+Slutkontroll
+
+Innan arbetet betraktas som klart ska följande vara verifierat:
+
+* En ny användare kan registrera sig.
+* Användaren kan ta eller välja bilder.
+* AI kan skapa ett annonsförslag.
+* Användaren kan redigera förslaget.
+* Annonsen kan publiceras.
+* Annonsen visas i appen.
+* Annonsen får en riktig publik webbadress.
+* Webbsidan innehåller korrekt SEO-information.
+* Webbsidan fungerar utan inloggning.
+* Annonsen går att hitta via intern sökning.
+* En annan användare kan skicka meddelande.
+* Säljaren kan markera annonsen som såld.
+* Annonsens externa publiceringsstatus kan visas.
+* Svenska och engelska fungerar.
+* Mobil och webb använder samma riktiga data.
+* Inga centrala funktioner använder mockdata.
+* Integritetsinställningarna fungerar.
+* Exakt adress och privata kontaktuppgifter visas inte av misstag.
+
+Leverera en fungerande, ren och välstrukturerad grund som kan byggas vidare till en global marknadsplats.
+
+Den viktigaste skillnaden här är att varje ny annons samtidigt blir en ny landningssida på webben. På så sätt bygger appen inte bara upp ett produktutbud, utan även ett växande nät av sidor som kan dra in trafik från Google.
