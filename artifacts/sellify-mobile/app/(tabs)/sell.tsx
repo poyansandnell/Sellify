@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Alert,
   ActivityIndicator,
@@ -57,8 +57,23 @@ export default function SellScreen() {
   const [price, setPrice] = useState('');
   const [city, setCity] = useState('');
   const [notes, setNotes] = useState('');
-  const appendNotes = (text: string) =>
-    setNotes((prev) => (prev.trim() ? `${prev.trim()}\n${text}` : text));
+  // Refs so async callbacks (voice transcription) always see the latest values.
+  const stepRef = useRef(step);
+  stepRef.current = step;
+  const imagesRef = useRef(images);
+  imagesRef.current = images;
+  const notesRef = useRef(notes);
+  notesRef.current = notes;
+  const appendNotes = (text: string) => {
+    const prev = notesRef.current.trim();
+    const merged = prev ? `${prev}\n${text}` : text;
+    notesRef.current = merged;
+    setNotes(merged);
+    // If the AI is already done, immediately rework the draft with what was said.
+    if (stepRef.current === 'review') {
+      runAnalysis(imagesRef.current, merged);
+    }
+  };
 
   const requestUploadUrl = useRequestUploadUrl();
   const analyzeImages = useAnalyzeImages();
@@ -293,12 +308,16 @@ export default function SellScreen() {
                 {t.analyzingHint}
               </Text>
             </View>
-            <VoiceNoteInput
-              value={notes}
-              onChangeText={setNotes}
-              onAppendText={appendNotes}
-            />
           </View>
+        ) : null}
+
+        {step === 'analyzing' || (step === 'review' && draft) ? (
+          <VoiceNoteInput
+            value={notes}
+            onChangeText={setNotes}
+            onAppendText={appendNotes}
+            questions={draft?.questions ?? []}
+          />
         ) : null}
 
         {step === 'review' && draft ? (
@@ -398,12 +417,6 @@ export default function SellScreen() {
               ) : null}
             </View>
 
-            <VoiceNoteInput
-              value={notes}
-              onChangeText={setNotes}
-              onAppendText={appendNotes}
-              questions={draft.questions ?? []}
-            />
             {notes.trim() ? (
               <SecondaryButton
                 testID="reanalyze-button"

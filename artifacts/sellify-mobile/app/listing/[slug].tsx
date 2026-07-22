@@ -10,6 +10,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
@@ -131,7 +132,10 @@ export default function ListingDetailScreen() {
         : t.shippingBoth;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <KeyboardAvoidingView
+      behavior="padding"
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       <ScrollView contentContainerStyle={{ paddingBottom: bottomPad + 110 }}>
         <View>
           <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
@@ -344,7 +348,7 @@ export default function ListingDetailScreen() {
           )}
         </View>
       ) : null}
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
