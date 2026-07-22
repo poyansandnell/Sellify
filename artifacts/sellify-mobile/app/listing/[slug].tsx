@@ -307,6 +307,7 @@ export default function ListingDetailScreen() {
                 placeholder={t.messagePlaceholder}
                 placeholderTextColor={colors.mutedForeground}
                 autoFocus
+                multiline
                 style={[
                   styles.messageInput,
                   {
@@ -434,13 +435,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
   },
-  messageRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  messageRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-end' },
   messageInput: {
     flex: 1,
-    height: 48,
+    minHeight: 48,
+    maxHeight: 120,
     borderRadius: colorsConst.radius,
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 14,
+    paddingTop: 13,
+    paddingBottom: 13,
     fontSize: 15,
     fontFamily: 'Inter_400Regular',
   },

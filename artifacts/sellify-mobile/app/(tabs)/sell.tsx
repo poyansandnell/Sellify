@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   ActivityIndicator,
@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import * as Location from 'expo-location';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
@@ -58,6 +59,46 @@ export default function SellScreen() {
   const [price, setPrice] = useState('');
   const [city, setCity] = useState('');
   const [notes, setNotes] = useState('');
+  const [justRefined, setJustRefined] = useState(false);
+  const refinedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cityTouchedRef = useRef(false);
+  const deviceCityRef = useRef('');
+
+  useEffect(() => {
+    return () => {
+      if (refinedTimerRef.current) clearTimeout(refinedTimerRef.current);
+    };
+  }, []);
+
+  // Prefill the seller's real city from device location (e.g. Katrineholm, not a guess).
+  // Only ask for permission once the user is signed in and actually in the sell flow.
+  useEffect(() => {
+    if (!isSignedIn || deviceCityRef.current) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') return;
+        const pos = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        const [place] = await Location.reverseGeocodeAsync({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+        });
+        const detected = place?.city || place?.subregion || place?.region || '';
+        if (detected && !cancelled) {
+          deviceCityRef.current = detected;
+          if (!cityTouchedRef.current) setCity(detected);
+        }
+      } catch {
+        // Location unavailable — the seller can still type their city.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isSignedIn]);
   // Refs so async callbacks (voice transcription) always see the latest values.
   const stepRef = useRef(step);
   stepRef.current = step;
@@ -102,6 +143,9 @@ export default function SellScreen() {
       setDraft((prev) =>
         prev ? { ...prev, questions: result.questions ?? [] } : prev,
       );
+      setJustRefined(true);
+      if (refinedTimerRef.current) clearTimeout(refinedTimerRef.current);
+      refinedTimerRef.current = setTimeout(() => setJustRefined(false), 6000);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch {
       if (seq === refineSeqRef.current) Alert.alert(t.error);
@@ -252,7 +296,7 @@ export default function SellScreen() {
           price: Number(price) || draft.suggestedPrice,
           currency: draft.currency || 'SEK',
           priceType: 'negotiable',
-          city: city.trim() || 'Stockholm',
+          city: city.trim() || deviceCityRef.current || 'Sverige',
           country: 'SE',
           shipping: 'pickup',
           images: images.map((img) => img.objectPath),
@@ -363,6 +407,12 @@ export default function SellScreen() {
 
         {step === 'review' && draft ? (
           <View style={styles.review}>
+            {justRefined ? (
+              <View style={styles.refinedBanner} testID="refined-banner">
+                <Feather name="check-circle" size={16} color="#15803d" />
+                <Text style={styles.refinedText}>{t.aiUpdated}</Text>
+              </View>
+            ) : null}
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={styles.thumbRow}>
                 {images.map((img, i) => (
@@ -434,7 +484,10 @@ export default function SellScreen() {
                   <TextInput
                     testID="city-input"
                     value={city}
-                    onChangeText={setCity}
+                    onChangeText={(text) => {
+                      cityTouchedRef.current = true;
+                      setCity(text);
+                    }}
                     placeholder="Stockholm"
                     placeholderTextColor={colors.mutedForeground}
                     style={[styles.fieldInput, { color: colors.foreground }]}
@@ -536,6 +589,21 @@ const styles = StyleSheet.create({
   photoBtnText: { fontSize: 16, fontFamily: 'Inter_600SemiBold' },
   center: { alignItems: 'center', gap: 14, paddingVertical: 60 },
   centerCompact: { alignItems: 'center', gap: 14, paddingVertical: 28 },
+  refinedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#dcfce7',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  refinedText: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#15803d',
+  },
   analyzingStep: { gap: 8 },
   aiBubble: {
     width: 64,

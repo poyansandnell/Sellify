@@ -86,6 +86,7 @@ const sv = {
 
   myListings: 'Mina annonser',
   createListing: 'Skapa annons',
+  aiUpdated: 'Texten är uppdaterad med dina detaljer',
   noListings: 'Inga annonser än',
   noListingsText: 'Tryck på Sälj för att lägga upp din första annons.',
   markSold: 'Markera som såld',
@@ -201,6 +202,7 @@ const en: typeof sv = {
 
   myListings: 'My listings',
   createListing: 'Create listing',
+  aiUpdated: 'The text was updated with your details',
   noListings: 'No listings yet',
   noListingsText: 'Tap Sell to post your first listing.',
   markSold: 'Mark as sold',
