@@ -10,7 +10,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { KeyboardStickyView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
@@ -132,10 +132,7 @@ export default function ListingDetailScreen() {
         : t.shippingBoth;
 
   return (
-    <KeyboardAvoidingView
-      behavior="padding"
-      style={[styles.container, { backgroundColor: colors.background }]}
-    >
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={{ paddingBottom: bottomPad + 110 }}>
         <View>
           <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
@@ -288,16 +285,20 @@ export default function ListingDetailScreen() {
       </View>
 
       {!isOwner && listing.status === 'active' ? (
-        <View
-          style={[
-            styles.footer,
-            {
-              backgroundColor: colors.background,
-              borderTopColor: colors.border,
-              paddingBottom: bottomPad + 12,
-            },
-          ]}
+        <KeyboardStickyView
+          style={styles.footerWrap}
+          offset={{ closed: 0, opened: bottomPad }}
         >
+          <View
+            style={[
+              styles.footer,
+              {
+                backgroundColor: colors.background,
+                borderTopColor: colors.border,
+                paddingBottom: bottomPad + 12,
+              },
+            ]}
+          >
           {showMessageBox ? (
             <View style={styles.messageRow}>
               <TextInput
@@ -347,9 +348,10 @@ export default function ListingDetailScreen() {
               }}
             />
           )}
-        </View>
+          </View>
+        </KeyboardStickyView>
       ) : null}
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -426,11 +428,13 @@ const styles = StyleSheet.create({
   avatarText: { fontSize: 17, fontFamily: 'Inter_700Bold' },
   sellerName: { fontSize: 15, fontFamily: 'Inter_600SemiBold' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  footer: {
+  footerWrap: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
+  },
+  footer: {
     borderTopWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 16,
     paddingTop: 12,

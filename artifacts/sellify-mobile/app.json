@@ -30,6 +30,12 @@
       "expo-font",
       "expo-web-browser",
       [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Sellify använder din plats för att fylla i rätt stad i dina annonser."
+        }
+      ],
+      [
         "expo-audio",
         {
           "microphonePermission": "Sellify använder mikrofonen så att du kan berätta om din vara med rösten."

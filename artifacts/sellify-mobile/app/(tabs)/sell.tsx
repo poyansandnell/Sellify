@@ -70,34 +70,44 @@ export default function SellScreen() {
     };
   }, []);
 
-  // Prefill the seller's real city from device location (e.g. Katrineholm, not a guess).
-  // Only ask for permission once the user is signed in and actually in the sell flow.
+  // Detect the seller's real city from device location (e.g. Katrineholm, not a guess).
+  const detectCity = async (): Promise<string> => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') return '';
+      const pos =
+        (await Location.getLastKnownPositionAsync()) ??
+        (await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        }));
+      if (!pos) return '';
+      const [place] = await Location.reverseGeocodeAsync({
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+      });
+      const detected = place?.city || place?.subregion || place?.region || '';
+      if (detected) deviceCityRef.current = detected;
+      return detected;
+    } catch {
+      // Location unavailable — the seller can still type their city.
+      return '';
+    }
+  };
+
+  // Prefill once the user is signed in and actually in the sell flow.
   useEffect(() => {
     if (!isSignedIn || deviceCityRef.current) return;
     let cancelled = false;
     (async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') return;
-        const pos = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-        const [place] = await Location.reverseGeocodeAsync({
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-        });
-        const detected = place?.city || place?.subregion || place?.region || '';
-        if (detected && !cancelled) {
-          deviceCityRef.current = detected;
-          if (!cityTouchedRef.current) setCity(detected);
-        }
-      } catch {
-        // Location unavailable — the seller can still type their city.
+      const detected = await detectCity();
+      if (detected && !cancelled && !cityTouchedRef.current) {
+        setCity(detected);
       }
     })();
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSignedIn]);
   // Refs so async callbacks (voice transcription) always see the latest values.
   const stepRef = useRef(step);
@@ -281,6 +291,16 @@ export default function SellScreen() {
 
   const onPublish = async () => {
     if (!draft || !title.trim() || !price.trim()) return;
+    let cityValue = city.trim() || deviceCityRef.current;
+    if (!cityValue) {
+      // Last attempt to get the real city — never publish with a made-up one.
+      cityValue = await detectCity();
+    }
+    if (!cityValue) {
+      Alert.alert(t.cityRequired);
+      return;
+    }
+    if (!city.trim()) setCity(cityValue);
     try {
       const listing = await createListing.mutateAsync({
         data: {
@@ -296,7 +316,7 @@ export default function SellScreen() {
           price: Number(price) || draft.suggestedPrice,
           currency: draft.currency || 'SEK',
           priceType: 'negotiable',
-          city: city.trim() || deviceCityRef.current || 'Sverige',
+          city: cityValue,
           country: 'SE',
           shipping: 'pickup',
           images: images.map((img) => img.objectPath),
