@@ -144,26 +144,6 @@ export default function ListingDetailScreen() {
               />
             ))}
           </ScrollView>
-          <View style={[styles.topBar, { top: topPad + 8 }]}>
-            <Pressable
-              testID="back-button"
-              onPress={() => router.back()}
-              style={styles.roundBtn}
-            >
-              <Feather name="arrow-left" size={20} color="#fff" />
-            </Pressable>
-            <Pressable
-              testID="favorite-button"
-              onPress={onToggleFavorite}
-              style={styles.roundBtn}
-            >
-              <Feather
-                name="heart"
-                size={20}
-                color={listing.isFavorited ? '#ff5a7a' : '#fff'}
-              />
-            </Pressable>
-          </View>
           {listing.status === 'sold' ? (
             <View style={[styles.soldOverlay, { backgroundColor: colors.foreground }]}>
               <Text style={[styles.soldText, { color: colors.background }]}>
@@ -281,6 +261,27 @@ export default function ListingDetailScreen() {
           ) : null}
         </View>
       </ScrollView>
+
+      <View style={[styles.topBar, { top: topPad + 8 }]}>
+        <Pressable
+          testID="back-button"
+          onPress={() => router.back()}
+          style={styles.roundBtn}
+        >
+          <Feather name="arrow-left" size={20} color="#fff" />
+        </Pressable>
+        <Pressable
+          testID="favorite-button"
+          onPress={onToggleFavorite}
+          style={styles.roundBtn}
+        >
+          <Feather
+            name="heart"
+            size={20}
+            color={listing.isFavorited ? '#ff5a7a' : '#fff'}
+          />
+        </Pressable>
+      </View>
 
       {!isOwner && listing.status === 'active' ? (
         <View

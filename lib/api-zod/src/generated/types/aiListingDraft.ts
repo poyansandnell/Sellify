@@ -39,4 +39,6 @@ export interface AiListingDraft {
   seoDescription?: string | null;
   /** Field names the AI is unsure about; UI should mark them as suggestions. */
   uncertainFields?: string[];
+  /** Short follow-up questions to the seller that would improve the listing. */
+  questions?: string[];
 }

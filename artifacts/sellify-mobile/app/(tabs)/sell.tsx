@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@clerk/expo';
@@ -28,6 +29,8 @@ import {
 import { useColors } from '@/hooks/useColors';
 import { conditionLabel, useI18n } from '@/lib/i18n';
 import { EmptyState, PrimaryButton, SecondaryButton } from '@/components/Ui';
+import { VoiceNoteInput } from '@/components/VoiceNoteInput';
+import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import colorsConst from '@/constants/colors';
 
 type Step = 'photos' | 'analyzing' | 'review';
@@ -53,6 +56,9 @@ export default function SellScreen() {
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [city, setCity] = useState('');
+  const [notes, setNotes] = useState('');
+  const appendNotes = (text: string) =>
+    setNotes((prev) => (prev.trim() ? `${prev.trim()}\n${text}` : text));
 
   const requestUploadUrl = useRequestUploadUrl();
   const analyzeImages = useAnalyzeImages();
@@ -81,25 +87,43 @@ export default function SellScreen() {
     );
   }
 
+  const compressAsset = async (asset: ImagePicker.ImagePickerAsset) => {
+    try {
+      const result = await manipulateAsync(
+        asset.uri,
+        asset.width > 1280 ? [{ resize: { width: 1280 } }] : [],
+        { compress: 0.6, format: SaveFormat.JPEG },
+      );
+      return { uri: result.uri, contentType: 'image/jpeg' };
+    } catch {
+      // Fall back to the original if compression fails (e.g. on web)
+      return { uri: asset.uri, contentType: asset.mimeType ?? 'image/jpeg' };
+    }
+  };
+
   const uploadAssets = async (assets: ImagePicker.ImagePickerAsset[]) => {
     setUploading(true);
-    const uploaded: UploadedImage[] = [];
     try {
-      for (const asset of assets) {
-        const name = asset.fileName ?? `photo-${Date.now()}.jpg`;
-        const contentType = asset.mimeType ?? 'image/jpeg';
-        const blob = await (await fetch(asset.uri)).blob();
-        const { uploadURL, objectPath } = await requestUploadUrl.mutateAsync({
-          data: { name, size: Math.max(1, blob.size), contentType },
-        });
-        const putRes = await fetch(uploadURL, {
-          method: 'PUT',
-          body: blob,
-          headers: { 'Content-Type': contentType },
-        });
-        if (!putRes.ok) throw new Error(`Upload failed: ${putRes.status}`);
-        uploaded.push({ localUri: asset.uri, objectPath });
-      }
+      const uploaded = await Promise.all(
+        assets.map(async (asset, i) => {
+          const { uri, contentType } = await compressAsset(asset);
+          const blob = await (await fetch(uri)).blob();
+          const { uploadURL, objectPath } = await requestUploadUrl.mutateAsync({
+            data: {
+              name: asset.fileName ?? `photo-${Date.now()}-${i}.jpg`,
+              size: Math.max(1, blob.size),
+              contentType,
+            },
+          });
+          const putRes = await fetch(uploadURL, {
+            method: 'PUT',
+            body: blob,
+            headers: { 'Content-Type': contentType },
+          });
+          if (!putRes.ok) throw new Error(`Upload failed: ${putRes.status}`);
+          return { localUri: asset.uri, objectPath } as UploadedImage;
+        }),
+      );
       setImages((prev) => [...prev, ...uploaded]);
       return uploaded;
     } finally {
@@ -107,7 +131,8 @@ export default function SellScreen() {
     }
   };
 
-  const runAnalysis = async (allImages: UploadedImage[]) => {
+  const runAnalysis = async (allImages: UploadedImage[], userNotes?: string) => {
+    const returnTo: Step = draft ? 'review' : 'photos';
     setStep('analyzing');
     try {
       const result = await analyzeImages.mutateAsync({
@@ -115,6 +140,7 @@ export default function SellScreen() {
           images: allImages.map((img) => img.objectPath),
           locale: language,
           currency: 'SEK',
+          userNotes: userNotes?.trim() || null,
         },
       });
       setDraft(result);
@@ -125,7 +151,7 @@ export default function SellScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch {
       Alert.alert(t.error);
-      setStep('photos');
+      setStep(returnTo);
     }
   };
 
@@ -146,7 +172,7 @@ export default function SellScreen() {
       if (result.canceled || result.assets.length === 0) return;
       const uploaded = await uploadAssets(result.assets);
       if (uploaded.length > 0 && step === 'photos') {
-        await runAnalysis([...images, ...uploaded]);
+        await runAnalysis([...images, ...uploaded], notes);
       }
     } catch {
       Alert.alert(t.uploadFailed);
@@ -190,6 +216,7 @@ export default function SellScreen() {
       setTitle('');
       setDescription('');
       setPrice('');
+      setNotes('');
       Alert.alert(t.published);
       router.push(`/listing/${published.slug}`);
     } catch {
@@ -202,13 +229,13 @@ export default function SellScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView
+      <KeyboardAwareScrollViewCompat
         contentContainerStyle={{
           paddingTop: topPad + 16,
           paddingBottom: bottomPad,
           paddingHorizontal: 16,
         }}
-        keyboardShouldPersistTaps="handled"
+        bottomOffset={24}
       >
         <Text style={[styles.heading, { color: colors.foreground }]}>
           {t.sellTitle}
@@ -253,17 +280,24 @@ export default function SellScreen() {
         ) : null}
 
         {step === 'analyzing' ? (
-          <View style={styles.center}>
-            <View style={[styles.aiBubble, { backgroundColor: colors.accent }]}>
-              <Feather name="zap" size={28} color={colors.accentForeground} />
+          <View style={styles.analyzingStep}>
+            <View style={styles.centerCompact}>
+              <View style={[styles.aiBubble, { backgroundColor: colors.accent }]}>
+                <Feather name="zap" size={28} color={colors.accentForeground} />
+              </View>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={[styles.analyzing, { color: colors.foreground }]}>
+                {t.analyzing}
+              </Text>
+              <Text style={[styles.hint, { color: colors.mutedForeground }]}>
+                {t.analyzingHint}
+              </Text>
             </View>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={[styles.analyzing, { color: colors.foreground }]}>
-              {t.analyzing}
-            </Text>
-            <Text style={[styles.hint, { color: colors.mutedForeground }]}>
-              {t.analyzingHint}
-            </Text>
+            <VoiceNoteInput
+              value={notes}
+              onChangeText={setNotes}
+              onAppendText={appendNotes}
+            />
           </View>
         ) : null}
 
@@ -364,6 +398,21 @@ export default function SellScreen() {
               ) : null}
             </View>
 
+            <VoiceNoteInput
+              value={notes}
+              onChangeText={setNotes}
+              onAppendText={appendNotes}
+              questions={draft.questions ?? []}
+            />
+            {notes.trim() ? (
+              <SecondaryButton
+                testID="reanalyze-button"
+                label={analyzeImages.isPending ? t.updatingWithAi : t.updateWithAi}
+                icon="refresh-cw"
+                onPress={() => runAnalysis(images, notes)}
+              />
+            ) : null}
+
             <PrimaryButton
               testID="publish-button"
               label={
@@ -377,7 +426,7 @@ export default function SellScreen() {
             />
           </View>
         ) : null}
-      </ScrollView>
+      </KeyboardAwareScrollViewCompat>
     </View>
   );
 }
@@ -432,6 +481,8 @@ const styles = StyleSheet.create({
   },
   photoBtnText: { fontSize: 16, fontFamily: 'Inter_600SemiBold' },
   center: { alignItems: 'center', gap: 14, paddingVertical: 60 },
+  centerCompact: { alignItems: 'center', gap: 14, paddingVertical: 28 },
+  analyzingStep: { gap: 8 },
   aiBubble: {
     width: 64,
     height: 64,

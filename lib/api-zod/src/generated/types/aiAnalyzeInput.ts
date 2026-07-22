@@ -20,4 +20,9 @@ export interface AiAnalyzeInput {
   country?: string | null;
   /** @nullable */
   currency?: string | null;
+  /**
+     * Extra details from the seller (spoken or typed) to incorporate in the listing.
+     * @nullable
+     */
+  userNotes?: string | null;
 }

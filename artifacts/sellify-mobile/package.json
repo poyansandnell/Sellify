@@ -58,5 +58,11 @@
     "typescript": "~5.9.2",
     "zod": "catalog:",
     "zod-validation-error": "^3.4.0"
+  },
+  "dependencies": {
+    "@react-navigation/elements": "^2.9.35",
+    "expo-audio": "~1.1.1",
+    "expo-file-system": "~19.0.23",
+    "expo-image-manipulator": "~14.0.8"
   }
 }

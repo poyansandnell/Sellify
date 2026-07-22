@@ -1,8 +1,12 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db } from "@workspace/db";
 import { categories } from "@workspace/db/schema";
-import { AnalyzeImagesBody } from "@workspace/api-zod";
+import { AnalyzeImagesBody, TranscribeAudioBody } from "@workspace/api-zod";
 import { openai } from "@workspace/integrations-openai-ai-server";
+import {
+  ensureCompatibleFormat,
+  speechToText,
+} from "@workspace/integrations-openai-ai-server/audio";
 import { requireAuth } from "../lib/auth";
 import { ObjectStorageService } from "../lib/objectStorage";
 
@@ -30,7 +34,7 @@ router.post("/ai/analyze", requireAuth, async (req: Request, res: Response) => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const { images, locale, city, country, currency } = parsed.data;
+  const { images, locale, city, country, currency, userNotes } = parsed.data;
 
   const imageUrls = (
     await Promise.all(images.slice(0, 5).map(imageToDataUrl))
@@ -59,7 +63,12 @@ Respond ONLY with JSON matching this shape:
 "specifications": [{"label": string, "value": string}],
 "keywords": [string] (5-10 search keywords),
 "seoTitle": string (max 60 chars), "seoDescription": string (max 155 chars),
-"uncertainFields": [string] (field names above you are unsure about, e.g. "brand","suggestedPrice")}`;
+"uncertainFields": [string] (field names above you are unsure about, e.g. "brand","suggestedPrice"),
+"questions": [string] (2-4 short follow-up questions in ${lang} to the seller that would most improve the listing or price accuracy, e.g. authenticity, age, receipts, registration number for vehicles, size. Only ask what the photos cannot answer.)}${
+    userNotes?.trim()
+      ? `\nThe seller also provided these extra details — treat them as authoritative and work them into the listing where relevant:\n"""${userNotes.trim()}"""`
+      : ""
+  }`;
 
   try {
     const completion = await openai.chat.completions.create({
@@ -108,11 +117,49 @@ Respond ONLY with JSON matching this shape:
       seoTitle: draft.seoTitle ?? null,
       seoDescription: draft.seoDescription ?? null,
       uncertainFields: Array.isArray(draft.uncertainFields) ? draft.uncertainFields : [],
+      questions: Array.isArray(draft.questions)
+        ? draft.questions.filter((q: unknown) => typeof q === "string").slice(0, 4)
+        : [],
     });
   } catch (error) {
     req.log.error({ err: error }, "AI analyze failed");
     res.status(502).json({ error: "AI analysis failed, please try again" });
   }
 });
+
+router.post(
+  "/ai/transcribe",
+  requireAuth,
+  async (req: Request, res: Response) => {
+    const parsed = TranscribeAudioBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const { audioBase64 } = parsed.data;
+    // ~15MB of base64 ≈ 11MB audio — far more than a short voice note needs.
+    if (audioBase64.length > 15_000_000) {
+      res.status(400).json({ error: "Audio too large" });
+      return;
+    }
+    if (!/^[A-Za-z0-9+/=\s]+$/.test(audioBase64)) {
+      res.status(400).json({ error: "Invalid base64 audio" });
+      return;
+    }
+    try {
+      const buffer = Buffer.from(audioBase64, "base64");
+      if (buffer.length < 100) {
+        res.status(400).json({ error: "Empty audio" });
+        return;
+      }
+      const { buffer: compatible, format } = await ensureCompatibleFormat(buffer);
+      const text = await speechToText(compatible, format);
+      res.json({ text });
+    } catch (error) {
+      req.log.error({ err: error }, "AI transcribe failed");
+      res.status(502).json({ error: "Transcription failed, please try again" });
+    }
+  },
+);
 
 export default router;

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { Feather } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@clerk/expo';
@@ -64,10 +65,12 @@ export default function ConversationScreen() {
   };
 
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
+  const headerHeight = useHeaderHeight();
 
   return (
     <KeyboardAvoidingView
       behavior="padding"
+      keyboardVerticalOffset={headerHeight}
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <Stack.Screen

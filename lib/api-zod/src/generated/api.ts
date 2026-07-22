@@ -554,7 +554,8 @@ export const AnalyzeImagesBody = zod.object({
   "locale": zod.string().describe('BCP-47 locale for generated text, e.g. sv or en.'),
   "city": zod.string().nullish(),
   "country": zod.string().nullish(),
-  "currency": zod.string().nullish()
+  "currency": zod.string().nullish(),
+  "userNotes": zod.string().nullish().describe('Extra details from the seller (spoken or typed) to incorporate in the listing.')
 })
 
 export const AnalyzeImagesResponse = zod.object({
@@ -579,7 +580,21 @@ export const AnalyzeImagesResponse = zod.object({
   "keywords": zod.array(zod.string()),
   "seoTitle": zod.string().nullish(),
   "seoDescription": zod.string().nullish(),
-  "uncertainFields": zod.array(zod.string()).optional().describe('Field names the AI is unsure about; UI should mark them as suggestions.')
+  "uncertainFields": zod.array(zod.string()).optional().describe('Field names the AI is unsure about; UI should mark them as suggestions.'),
+  "questions": zod.array(zod.string()).optional().describe('Short follow-up questions to the seller that would improve the listing.')
+})
+
+
+/**
+ * @summary Transcribe a short audio recording to text
+ */
+export const TranscribeAudioBody = zod.object({
+  "audioBase64": zod.string().describe('Base64-encoded audio recording.'),
+  "mimeType": zod.string().nullish()
+})
+
+export const TranscribeAudioResponse = zod.object({
+  "text": zod.string()
 })
 
 

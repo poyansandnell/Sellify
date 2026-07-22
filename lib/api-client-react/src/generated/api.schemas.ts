@@ -295,6 +295,22 @@ export interface AiAnalyzeInput {
   country?: string | null;
   /** @nullable */
   currency?: string | null;
+  /**
+     * Extra details from the seller (spoken or typed) to incorporate in the listing.
+     * @nullable
+     */
+  userNotes?: string | null;
+}
+
+export interface AiTranscribeInput {
+  /** Base64-encoded audio recording. */
+  audioBase64: string;
+  /** @nullable */
+  mimeType?: string | null;
+}
+
+export interface AiTranscribeResult {
+  text: string;
 }
 
 export type AiListingDraftCondition = typeof AiListingDraftCondition[keyof typeof AiListingDraftCondition];
@@ -339,6 +355,8 @@ export interface AiListingDraft {
   seoDescription?: string | null;
   /** Field names the AI is unsure about; UI should mark them as suggestions. */
   uncertainFields?: string[];
+  /** Short follow-up questions to the seller that would improve the listing. */
+  questions?: string[];
 }
 
 export interface Profile {

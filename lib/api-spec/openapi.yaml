@@ -300,6 +300,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AiListingDraft"
+  /ai/transcribe:
+    post:
+      operationId: transcribeAudio
+      tags: [ai]
+      summary: Transcribe a short audio recording to text
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiTranscribeInput"
+      responses:
+        "200":
+          description: Transcription
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiTranscribeResult"
   /home:
     get:
       operationId: getHomeFeed
@@ -741,6 +759,22 @@ components:
         city: { type: ["string", "null"] }
         country: { type: ["string", "null"] }
         currency: { type: ["string", "null"] }
+        userNotes:
+          type: ["string", "null"]
+          description: Extra details from the seller (spoken or typed) to incorporate in the listing.
+    AiTranscribeInput:
+      type: object
+      required: [audioBase64]
+      properties:
+        audioBase64:
+          type: string
+          description: Base64-encoded audio recording.
+        mimeType: { type: ["string", "null"] }
+    AiTranscribeResult:
+      type: object
+      required: [text]
+      properties:
+        text: { type: string }
     AiListingDraft:
       type: object
       required: [title, description, shortDescription, condition, suggestedPrice, currency, keywords]
@@ -772,6 +806,10 @@ components:
           type: array
           items: { type: string }
           description: Field names the AI is unsure about; UI should mark them as suggestions.
+        questions:
+          type: array
+          items: { type: string }
+          description: Short follow-up questions to the seller that would improve the listing.
     Profile:
       type: object
       required: [id, displayName, memberSince]
