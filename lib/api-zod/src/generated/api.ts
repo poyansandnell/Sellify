@@ -586,6 +586,26 @@ export const AnalyzeImagesResponse = zod.object({
 
 
 /**
+ * @summary Quickly rewrite an existing draft's text using extra seller notes (no image analysis)
+ */
+export const RefineListingDraftBody = zod.object({
+  "title": zod.string(),
+  "description": zod.string(),
+  "price": zod.number().nullish(),
+  "currency": zod.string().nullish(),
+  "locale": zod.string().describe('BCP-47 locale for generated text, e.g. sv or en.'),
+  "userNotes": zod.string().describe('Extra details from the seller (spoken or typed) to work into the text.')
+})
+
+export const RefineListingDraftResponse = zod.object({
+  "title": zod.string(),
+  "description": zod.string(),
+  "suggestedPrice": zod.number().nullish(),
+  "questions": zod.array(zod.string()).optional().describe('Remaining follow-up questions, if any.')
+})
+
+
+/**
  * @summary Transcribe a short audio recording to text
  */
 export const TranscribeAudioBody = zod.object({

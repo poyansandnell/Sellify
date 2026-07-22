@@ -302,6 +302,28 @@ export interface AiAnalyzeInput {
   userNotes?: string | null;
 }
 
+export interface AiRefineInput {
+  title: string;
+  description: string;
+  /** @nullable */
+  price?: number | null;
+  /** @nullable */
+  currency?: string | null;
+  /** BCP-47 locale for generated text, e.g. sv or en. */
+  locale: string;
+  /** Extra details from the seller (spoken or typed) to work into the text. */
+  userNotes: string;
+}
+
+export interface AiRefineResult {
+  title: string;
+  description: string;
+  /** @nullable */
+  suggestedPrice?: number | null;
+  /** Remaining follow-up questions, if any. */
+  questions?: string[];
+}
+
 export interface AiTranscribeInput {
   /** Base64-encoded audio recording. */
   audioBase64: string;

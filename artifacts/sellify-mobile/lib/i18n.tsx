@@ -85,6 +85,7 @@ const sv = {
   writeMessage: 'Skriv ett meddelande...',
 
   myListings: 'Mina annonser',
+  createListing: 'Skapa annons',
   noListings: 'Inga annonser än',
   noListingsText: 'Tryck på Sälj för att lägga upp din första annons.',
   markSold: 'Markera som såld',
@@ -199,6 +200,7 @@ const en: typeof sv = {
   writeMessage: 'Write a message...',
 
   myListings: 'My listings',
+  createListing: 'Create listing',
   noListings: 'No listings yet',
   noListingsText: 'Tap Sell to post your first listing.',
   markSold: 'Mark as sold',

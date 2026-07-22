@@ -78,14 +78,24 @@ export default function MyListingsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text
-        style={[
-          styles.heading,
-          { color: colors.foreground, paddingTop: topPad + 16 },
-        ]}
-      >
-        {t.myListings}
-      </Text>
+      <View style={[styles.headerRow, { paddingTop: topPad + 16 }]}>
+        <Text style={[styles.heading, { color: colors.foreground }]}>
+          {t.myListings}
+        </Text>
+        <Pressable
+          testID="create-listing-button"
+          onPress={() => router.push('/(tabs)/sell')}
+          style={({ pressed }) => [
+            styles.createBtn,
+            { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },
+          ]}
+        >
+          <Feather name="plus" size={16} color={colors.primaryForeground} />
+          <Text style={[styles.createBtnText, { color: colors.primaryForeground }]}>
+            {t.createListing}
+          </Text>
+        </Pressable>
+      </View>
       {isLoading ? (
         <LoadingView />
       ) : listings?.length ? (
@@ -195,7 +205,18 @@ export default function MyListingsScreen() {
           )}
         />
       ) : (
-        <EmptyState icon="package" title={t.noListings} text={t.noListingsText} />
+        <EmptyState
+          icon="package"
+          title={t.noListings}
+          text={t.noListingsText}
+          action={
+            <PrimaryButton
+              label={t.createListing}
+              icon="plus"
+              onPress={() => router.push('/(tabs)/sell')}
+            />
+          }
+        />
       )}
     </View>
   );
@@ -203,12 +224,26 @@ export default function MyListingsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  heading: {
-    fontSize: 24,
-    fontFamily: 'Inter_700Bold',
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingBottom: 12,
   },
+  heading: {
+    fontSize: 24,
+    fontFamily: 'Inter_700Bold',
+  },
+  createBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  createBtnText: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
   card: {
     flexDirection: 'row',
     alignItems: 'center',

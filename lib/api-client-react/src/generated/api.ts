@@ -22,6 +22,8 @@ import type {
 import type {
   AiAnalyzeInput,
   AiListingDraft,
+  AiRefineInput,
+  AiRefineResult,
   AiTranscribeInput,
   AiTranscribeResult,
   Category,
@@ -1117,6 +1119,77 @@ export const useAnalyzeImages = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getAnalyzeImagesMutationOptions(options));
+    }
+
+export const getRefineListingDraftUrl = () => {
+
+
+
+
+  return `/api/ai/refine`
+}
+
+/**
+ * @summary Quickly rewrite an existing draft's text using extra seller notes (no image analysis)
+ */
+export const refineListingDraft = async (aiRefineInput: AiRefineInput, options?: RequestInit): Promise<AiRefineResult> => {
+
+  return customFetch<AiRefineResult>(getRefineListingDraftUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(aiRefineInput)
+  }
+);}
+
+
+
+
+
+export const getRefineListingDraftMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refineListingDraft>>, TError,{data: BodyType<AiRefineInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof refineListingDraft>>, TError,{data: BodyType<AiRefineInput>}, TContext> => {
+
+const mutationKey = ['refineListingDraft'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof refineListingDraft>>, {data: BodyType<AiRefineInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  refineListingDraft(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RefineListingDraftMutationResult = NonNullable<Awaited<ReturnType<typeof refineListingDraft>>>
+    export type RefineListingDraftMutationBody = BodyType<AiRefineInput>
+    export type RefineListingDraftMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Quickly rewrite an existing draft's text using extra seller notes (no image analysis)
+ */
+export const useRefineListingDraft = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refineListingDraft>>, TError,{data: BodyType<AiRefineInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof refineListingDraft>>,
+        TError,
+        {data: BodyType<AiRefineInput>},
+        TContext
+      > => {
+      return useMutation(getRefineListingDraftMutationOptions(options));
     }
 
 export const getTranscribeAudioUrl = () => {

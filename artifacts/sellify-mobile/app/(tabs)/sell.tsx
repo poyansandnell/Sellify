@@ -22,6 +22,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   useAnalyzeImages,
   useCreateListing,
+  useRefineListingDraft,
   usePublishListing,
   useRequestUploadUrl,
   type AiListingDraft,
@@ -64,19 +65,59 @@ export default function SellScreen() {
   imagesRef.current = images;
   const notesRef = useRef(notes);
   notesRef.current = notes;
+  const titleRef = useRef(title);
+  titleRef.current = title;
+  const descriptionRef = useRef(description);
+  descriptionRef.current = description;
+  const priceRef = useRef(price);
+  priceRef.current = price;
+
+  const requestUploadUrl = useRequestUploadUrl();
+  const analyzeImages = useAnalyzeImages();
+  const refineDraft = useRefineListingDraft();
+
+  // Fast text-only rewrite of the draft — no image re-analysis, stays on the review step.
+  // Monotonic id guards against out-of-order responses overwriting newer results,
+  // and only the latest in-flight request may apply its result.
+  const refineSeqRef = useRef(0);
+  const runRefine = async (userNotes: string) => {
+    const seq = ++refineSeqRef.current;
+    try {
+      const result = await refineDraft.mutateAsync({
+        data: {
+          title: titleRef.current,
+          description: descriptionRef.current,
+          price: Number(priceRef.current) || null,
+          currency: 'SEK',
+          locale: language,
+          userNotes,
+        },
+      });
+      if (seq !== refineSeqRef.current) return; // a newer refine superseded this one
+      setTitle(result.title);
+      setDescription(result.description);
+      if (result.suggestedPrice != null) {
+        setPrice(String(Math.round(result.suggestedPrice)));
+      }
+      setDraft((prev) =>
+        prev ? { ...prev, questions: result.questions ?? [] } : prev,
+      );
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      if (seq === refineSeqRef.current) Alert.alert(t.error);
+    }
+  };
+
   const appendNotes = (text: string) => {
     const prev = notesRef.current.trim();
     const merged = prev ? `${prev}\n${text}` : text;
     notesRef.current = merged;
     setNotes(merged);
-    // If the AI is already done, immediately rework the draft with what was said.
+    // If the AI is already done, quickly rework the text with what was said.
     if (stepRef.current === 'review') {
-      runAnalysis(imagesRef.current, merged);
+      runRefine(merged);
     }
   };
-
-  const requestUploadUrl = useRequestUploadUrl();
-  const analyzeImages = useAnalyzeImages();
   const createListing = useCreateListing();
   const publishListing = usePublishListing();
 
@@ -420,9 +461,9 @@ export default function SellScreen() {
             {notes.trim() ? (
               <SecondaryButton
                 testID="reanalyze-button"
-                label={analyzeImages.isPending ? t.updatingWithAi : t.updateWithAi}
+                label={refineDraft.isPending ? t.updatingWithAi : t.updateWithAi}
                 icon="refresh-cw"
-                onPress={() => runAnalysis(images, notes)}
+                onPress={() => runRefine(notes)}
               />
             ) : null}
 

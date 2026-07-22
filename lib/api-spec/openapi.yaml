@@ -300,6 +300,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AiListingDraft"
+  /ai/refine:
+    post:
+      operationId: refineListingDraft
+      tags: [ai]
+      summary: Quickly rewrite an existing draft's text using extra seller notes (no image analysis)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiRefineInput"
+      responses:
+        "200":
+          description: Refined text fields
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiRefineResult"
   /ai/transcribe:
     post:
       operationId: transcribeAudio
@@ -762,6 +780,31 @@ components:
         userNotes:
           type: ["string", "null"]
           description: Extra details from the seller (spoken or typed) to incorporate in the listing.
+    AiRefineInput:
+      type: object
+      required: [title, description, userNotes, locale]
+      properties:
+        title: { type: string }
+        description: { type: string }
+        price: { type: ["number", "null"] }
+        currency: { type: ["string", "null"] }
+        locale:
+          type: string
+          description: BCP-47 locale for generated text, e.g. sv or en.
+        userNotes:
+          type: string
+          description: Extra details from the seller (spoken or typed) to work into the text.
+    AiRefineResult:
+      type: object
+      required: [title, description]
+      properties:
+        title: { type: string }
+        description: { type: string }
+        suggestedPrice: { type: ["number", "null"] }
+        questions:
+          type: array
+          items: { type: string }
+          description: Remaining follow-up questions, if any.
     AiTranscribeInput:
       type: object
       required: [audioBase64]

@@ -1,7 +1,11 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db } from "@workspace/db";
 import { categories } from "@workspace/db/schema";
-import { AnalyzeImagesBody, TranscribeAudioBody } from "@workspace/api-zod";
+import {
+  AnalyzeImagesBody,
+  RefineListingDraftBody,
+  TranscribeAudioBody,
+} from "@workspace/api-zod";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import {
   ensureCompatibleFormat,
@@ -124,6 +128,54 @@ Respond ONLY with JSON matching this shape:
   } catch (error) {
     req.log.error({ err: error }, "AI analyze failed");
     res.status(502).json({ error: "AI analysis failed, please try again" });
+  }
+});
+
+router.post("/ai/refine", requireAuth, async (req: Request, res: Response) => {
+  const parsed = RefineListingDraftBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const { title, description, price, currency, locale, userNotes } = parsed.data;
+  if (title.length > 200 || description.length > 10_000 || userNotes.length > 5_000) {
+    res.status(400).json({ error: "Input too long" });
+    return;
+  }
+  const lang = locale?.startsWith("sv") ? "Swedish" : "English";
+  const cur = currency || "SEK";
+
+  const systemPrompt = `You are an expert second-hand marketplace listing editor. The seller has an existing listing draft and just provided extra details. Rewrite the title and description in ${lang}, working the new details in naturally. Keep everything true; keep the tone and length similar. Only adjust the price if the new details clearly justify it.
+Respond ONLY with JSON:
+{"title": string (max 70 chars), "description": string, "suggestedPrice": number|null (null if unchanged), "questions": [string] (0-3 remaining short follow-up questions in ${lang}, only what is still unanswered)}`;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-5.6-terra",
+      max_completion_tokens: 1500,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: systemPrompt },
+        {
+          role: "user",
+          content: `Current title: ${title}\nCurrent price: ${price ?? "?"} ${cur}\nCurrent description:\n${description}\n\nNew details from the seller (authoritative):\n"""${userNotes.trim()}"""`,
+        },
+      ],
+    });
+    const raw = completion.choices[0]?.message?.content;
+    if (!raw) throw new Error("Empty AI response");
+    const out = JSON.parse(raw);
+    res.json({
+      title: String(out.title ?? title),
+      description: String(out.description ?? description),
+      suggestedPrice: out.suggestedPrice != null ? Number(out.suggestedPrice) : null,
+      questions: Array.isArray(out.questions)
+        ? out.questions.filter((q: unknown) => typeof q === "string").slice(0, 3)
+        : [],
+    });
+  } catch (error) {
+    req.log.error({ err: error }, "AI refine failed");
+    res.status(502).json({ error: "AI refine failed, please try again" });
   }
 });
 
