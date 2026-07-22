@@ -1,0 +1,23 @@
+kind = "mobile"
+previewPath = "/sellify-mobile/"
+title = "Sellify Mobile"
+version = "1.0.0"
+id = "artifacts/sellify-mobile"
+router = "expo-domain"
+
+[[services]]
+name = "expo"
+ensurePreviewReachable = "/status"
+paths = [ "/sellify-mobile/" ]
+localPort = 25942
+
+[services.development]
+run = "pnpm --filter @workspace/sellify-mobile run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/sellify-mobile", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/sellify-mobile", "run", "serve" ]
+
+[services.env]
+PORT = "25942"
+BASE_PATH = "/sellify-mobile/"
