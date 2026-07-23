@@ -23,6 +23,7 @@ import {
 import { useColors } from '@/hooks/useColors';
 import { useI18n } from '@/lib/i18n';
 import { formatPrice, imageUrl } from '@/lib/utils';
+import { setCopyListing } from '@/lib/copyListing';
 import { EmptyState, LoadingView, PrimaryButton } from '@/components/Ui';
 import colorsConst from '@/constants/colors';
 
@@ -182,6 +183,19 @@ export default function MyListingsScreen() {
                 </View>
               </View>
               <View style={styles.actions}>
+                {item.status === 'sold' ? (
+                  <Pressable
+                    testID={`copy-listing-${item.id}`}
+                    onPress={() => {
+                      setCopyListing(item);
+                      router.push('/(tabs)/sell');
+                    }}
+                    hitSlop={8}
+                    style={[styles.actionBtn, { backgroundColor: colors.secondary }]}
+                  >
+                    <Feather name="copy" size={16} color={colors.secondaryForeground} />
+                  </Pressable>
+                ) : null}
                 {item.status === 'active' ? (
                   <Pressable
                     testID={`mark-sold-${item.id}`}

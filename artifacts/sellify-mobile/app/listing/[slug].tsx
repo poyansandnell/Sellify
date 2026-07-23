@@ -4,6 +4,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -27,7 +28,7 @@ import {
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { conditionLabel, useI18n } from '@/lib/i18n';
-import { formatPrice, imageUrl } from '@/lib/utils';
+import { formatPrice, imageUrl, listingUrl } from '@/lib/utils';
 import { ListingCard } from '@/components/ListingCard';
 import {
   EmptyState,
@@ -271,17 +272,33 @@ export default function ListingDetailScreen() {
         >
           <Feather name="arrow-left" size={20} color="#fff" />
         </Pressable>
-        <Pressable
-          testID="favorite-button"
-          onPress={onToggleFavorite}
-          style={styles.roundBtn}
-        >
-          <Feather
-            name="heart"
-            size={20}
-            color={listing.isFavorited ? '#ff5a7a' : '#fff'}
-          />
-        </Pressable>
+        <View style={styles.topBarRight}>
+          <Pressable
+            testID="share-button"
+            onPress={() => {
+              const url = listingUrl(listing.slug);
+              Share.share(
+                Platform.OS === 'ios'
+                  ? { message: listing.title, url }
+                  : { message: `${listing.title}\n${url}` },
+              ).catch(() => {});
+            }}
+            style={styles.roundBtn}
+          >
+            <Feather name="share" size={20} color="#fff" />
+          </Pressable>
+          <Pressable
+            testID="favorite-button"
+            onPress={onToggleFavorite}
+            style={styles.roundBtn}
+          >
+            <Feather
+              name="heart"
+              size={20}
+              color={listing.isFavorited ? '#ff5a7a' : '#fff'}
+            />
+          </Pressable>
+        </View>
       </View>
 
       {!isOwner && listing.status === 'active' ? (
@@ -364,6 +381,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
+  topBarRight: { flexDirection: 'row', gap: 10 },
   roundBtn: {
     width: 40,
     height: 40,

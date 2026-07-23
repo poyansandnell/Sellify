@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   ActivityIndicator,
@@ -17,7 +17,7 @@ import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -33,6 +33,8 @@ import { conditionLabel, useI18n } from '@/lib/i18n';
 import { EmptyState, PrimaryButton, SecondaryButton } from '@/components/Ui';
 import { VoiceNoteInput } from '@/components/VoiceNoteInput';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
+import { takeCopyListing } from '@/lib/copyListing';
+import { imageUrl } from '@/lib/utils';
 import colorsConst from '@/constants/colors';
 
 type Step = 'photos' | 'analyzing' | 'review';
@@ -109,6 +111,60 @@ export default function SellScreen() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSignedIn]);
+  // "Skapa liknande annons": prefill the whole form from an existing listing.
+  useFocusEffect(
+    useCallback(() => {
+      const src = takeCopyListing();
+      if (!src) return;
+      const hasWork =
+        imagesRef.current.length > 0 ||
+        titleRef.current.trim().length > 0 ||
+        descriptionRef.current.trim().length > 0;
+      const apply = () => applyCopy(src);
+      if (hasWork) {
+        Alert.alert(t.copyListingTitle, t.copyListingReplace, [
+          { text: t.cancel, style: 'cancel' },
+          { text: t.copyListingConfirm, style: 'destructive', onPress: apply },
+        ]);
+      } else {
+        apply();
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []),
+  );
+
+  const applyCopy = (src: NonNullable<ReturnType<typeof takeCopyListing>>) => {
+      setImages(
+        src.images.map((p) => ({ localUri: imageUrl(p) ?? '', objectPath: p })),
+      );
+      setTitle(src.title);
+      setDescription(src.description);
+      setPrice(String(Math.round(src.price)));
+      if (src.city) {
+        cityTouchedRef.current = true;
+        setCity(src.city);
+      }
+      setNotes('');
+      setDraft({
+        title: src.title,
+        description: src.description,
+        shortDescription: src.shortDescription ?? '',
+        categoryId: src.categoryId ?? null,
+        brand: src.brand ?? null,
+        model: src.model ?? null,
+        color: src.color ?? null,
+        material: src.material ?? null,
+        condition: src.condition as unknown as AiListingDraft['condition'],
+        suggestedPrice: src.price,
+        currency: src.currency,
+        keywords: src.keywords ?? [],
+        specifications: src.specifications ?? [],
+        seoTitle: src.seoTitle ?? null,
+        seoDescription: src.seoDescription ?? null,
+      });
+      setStep('review');
+  };
+
   // Refs so async callbacks (voice transcription) always see the latest values.
   const stepRef = useRef(step);
   stepRef.current = step;

@@ -7,6 +7,10 @@ export function imageUrl(path?: string | null): string | undefined {
   return `${API_ORIGIN}${path}`;
 }
 
+export function listingUrl(slug: string): string {
+  return `${API_ORIGIN}/listing/${slug}`;
+}
+
 export function formatPrice(price: number, currency: string): string {
   const rounded = Math.round(price);
   const formatted = rounded.toLocaleString('sv-SE');
