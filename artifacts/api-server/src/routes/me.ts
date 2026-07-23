@@ -2,8 +2,8 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { clerkClient } from "@clerk/express";
 import { desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@workspace/db";
-import { favorites, listings, profiles } from "@workspace/db/schema";
-import { UpdateMeBody } from "@workspace/api-zod";
+import { favorites, listings, profiles, pushTokens } from "@workspace/db/schema";
+import { SavePushTokenBody, UpdateMeBody } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
 import { toListingDtos } from "../lib/listingUtils";
 
@@ -111,6 +111,23 @@ router.get("/me/favorites", requireAuth, async (req: Request, res: Response) => 
     .where(inArray(listings.id, favs.map((f) => f.listingId)))
     .orderBy(desc(listings.createdAt));
   res.json(await toListingDtos(rows, userId));
+});
+
+router.post("/me/push-token", requireAuth, async (req: Request, res: Response) => {
+  const parsed = SavePushTokenBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const userId = (req as AuthedRequest).userId;
+  await db
+    .insert(pushTokens)
+    .values({ token: parsed.data.token, userId })
+    .onConflictDoUpdate({
+      target: pushTokens.token,
+      set: { userId },
+    });
+  res.status(204).end();
 });
 
 export default router;

@@ -418,6 +418,26 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Listing"
+  /me/push-token:
+    post:
+      operationId: savePushToken
+      tags: [me]
+      summary: Register a device push token for the current user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PushTokenInput"
+      responses:
+        "204":
+          description: Saved
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
   /sellers/{id}:
     get:
       operationId: getSeller
@@ -949,6 +969,11 @@ components:
       properties:
         content: { type: string, minLength: 1 }
         imageUrl: { type: ["string", "null"] }
+    PushTokenInput:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string, minLength: 1, maxLength: 400 }
     UploadUrlRequest:
       type: object
       required: [name, size, contentType]

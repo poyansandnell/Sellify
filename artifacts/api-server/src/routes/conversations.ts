@@ -4,7 +4,26 @@ import { db } from "@workspace/db";
 import { conversations, listings, messages, profiles } from "@workspace/db/schema";
 import { SendMessageBody, StartConversationBody } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
+import { sendPushToUser } from "../lib/push";
 import { ensureProfile } from "./me";
+
+async function notifyNewMessage(
+  recipientId: string,
+  senderId: string,
+  conversationId: number,
+  content: string,
+) {
+  try {
+    const [sender] = await db.select().from(profiles).where(eq(profiles.id, senderId));
+    await sendPushToUser(recipientId, {
+      title: sender?.displayName ?? "Sellify",
+      body: content.length > 140 ? `${content.slice(0, 137)}...` : content,
+      data: { conversationId },
+    });
+  } catch {
+    // Push is best-effort — never let it affect the message request.
+  }
+}
 
 const router: IRouter = Router();
 
@@ -102,6 +121,7 @@ router.post("/conversations", requireAuth, async (req: Request, res: Response) =
     .update(conversations)
     .set({ lastMessageAt: new Date() })
     .where(eq(conversations.id, conv.id));
+  void notifyNewMessage(listing.sellerId, userId, conv.id, parsed.data.message);
   res.status(201).json(await conversationDto(conv.id, userId));
 });
 
@@ -166,6 +186,8 @@ router.post("/conversations/:id/messages", requireAuth, async (req: Request, res
     .update(conversations)
     .set({ lastMessageAt: new Date() })
     .where(eq(conversations.id, conv.id));
+  const recipientId = conv.buyerId === userId ? conv.sellerId : conv.buyerId;
+  void notifyNewMessage(recipientId, userId, conv.id, parsed.data.content);
   res.status(201).json({
     id: m.id,
     conversationId: m.conversationId,

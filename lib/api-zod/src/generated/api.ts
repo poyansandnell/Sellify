@@ -862,6 +862,20 @@ export const GetMyFavoritesResponse = zod.array(GetMyFavoritesResponseItem)
 
 
 /**
+ * @summary Register a device push token for the current user
+ */
+export const savePushTokenBodyTokenMax = 400;
+
+
+
+export const SavePushTokenBody = zod.object({
+  "token": zod.string().min(1).max(savePushTokenBodyTokenMax)
+})
+
+export const SavePushTokenResponse = zod.void()
+
+
+/**
  * @summary Public seller profile with active listings
  */
 export const GetSellerParams = zod.object({

@@ -96,6 +96,16 @@ export const conversations = pgTable(
   (t) => [uniqueIndex("conversations_listing_buyer_idx").on(t.listingId, t.buyerId)],
 );
 
+export const pushTokens = pgTable(
+  "push_tokens",
+  {
+    token: text("token").primaryKey(),
+    userId: text("user_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("push_tokens_user_idx").on(t.userId)],
+);
+
 export const messages = pgTable(
   "messages",
   {

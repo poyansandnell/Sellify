@@ -44,6 +44,7 @@ import type {
   MessageInput,
   Profile,
   ProfileUpdate,
+  PushTokenInput,
   SellerPublic,
   UploadUrlRequest,
   UploadUrlResponse
@@ -1648,6 +1649,77 @@ export function useGetMyFavorites<TData = Awaited<ReturnType<typeof getMyFavorit
 
 
 
+
+export const getSavePushTokenUrl = () => {
+
+
+
+
+  return `/api/me/push-token`
+}
+
+/**
+ * @summary Register a device push token for the current user
+ */
+export const savePushToken = async (pushTokenInput: PushTokenInput, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getSavePushTokenUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(pushTokenInput)
+  }
+);}
+
+
+
+
+
+export const getSavePushTokenMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof savePushToken>>, TError,{data: BodyType<PushTokenInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof savePushToken>>, TError,{data: BodyType<PushTokenInput>}, TContext> => {
+
+const mutationKey = ['savePushToken'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof savePushToken>>, {data: BodyType<PushTokenInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  savePushToken(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SavePushTokenMutationResult = NonNullable<Awaited<ReturnType<typeof savePushToken>>>
+    export type SavePushTokenMutationBody = BodyType<PushTokenInput>
+    export type SavePushTokenMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Register a device push token for the current user
+ */
+export const useSavePushToken = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof savePushToken>>, TError,{data: BodyType<PushTokenInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof savePushToken>>,
+        TError,
+        {data: BodyType<PushTokenInput>},
+        TContext
+      > => {
+      return useMutation(getSavePushTokenMutationOptions(options));
+    }
 
 export const getGetSellerUrl = (id: string,) => {
 

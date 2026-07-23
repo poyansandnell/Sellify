@@ -483,6 +483,14 @@ export interface MessageInput {
   imageUrl?: string | null;
 }
 
+export interface PushTokenInput {
+  /**
+     * @minLength 1
+     * @maxLength 400
+     */
+  token: string;
+}
+
 export interface UploadUrlRequest {
   /** @minLength 1 */
   name: string;

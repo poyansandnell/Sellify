@@ -43,6 +43,7 @@ export * from './message';
 export * from './messageInput';
 export * from './profile';
 export * from './profileUpdate';
+export * from './pushTokenInput';
 export * from './sellerPublic';
 export * from './specification';
 export * from './uploadUrlRequest';
