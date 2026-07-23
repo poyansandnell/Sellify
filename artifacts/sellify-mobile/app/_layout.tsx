@@ -66,7 +66,7 @@ function AuthTokenBridge() {
 function RootLayoutNav() {
   const { t } = useI18n();
   return (
-    <Stack screenOptions={{ headerBackTitle: t.cancel }}>
+    <Stack screenOptions={{ headerBackTitle: t.back }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="listing/[slug]" options={{ headerShown: false }} />
       <Stack.Screen name="search" options={{ headerShown: false }} />

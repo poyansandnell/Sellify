@@ -12,7 +12,7 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { Feather } from '@expo/vector-icons';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -31,6 +31,7 @@ export default function ConversationScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
+  const router = useRouter();
   const { userId } = useAuth();
   const queryClient = useQueryClient();
 
@@ -74,7 +75,25 @@ export default function ConversationScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <Stack.Screen
-        options={{ title: conversation?.otherPartyName ?? t.messagesTitle }}
+        options={{
+          title: conversation?.otherPartyName ?? t.messagesTitle,
+          headerLeft: () => (
+            <Pressable
+              testID="conversation-back-button"
+              hitSlop={12}
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace('/(tabs)/messages');
+                }
+              }}
+              style={{ paddingRight: 12 }}
+            >
+              <Feather name="arrow-left" size={22} color={colors.foreground} />
+            </Pressable>
+          ),
+        }}
       />
       {conversation ? (
         <View
