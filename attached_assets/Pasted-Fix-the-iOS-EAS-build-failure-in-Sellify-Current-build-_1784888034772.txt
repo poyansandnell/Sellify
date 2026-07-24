@@ -1,0 +1,77 @@
+Fix the iOS EAS build failure in Sellify.
+
+Current build error:
+
+[SPM] Adding SPM dependency on product ["ClerkKit", "ClerkKitUI"]
+undefined method `package_product_dependencies' for nil:NilClass
+
+The failure occurs during pod install in React Native's scripts/cocoapods/spm.rb while using:
+- Expo SDK 54
+- React Native 0.81.5
+- @clerk/expo 3.7.8
+- pnpm monorepo
+- EAS Build
+
+Requirements:
+
+1. Remove all usage and imports of Clerk native UI and native authentication modules that add ClerkKit or ClerkKitUI through Swift Package Manager.
+
+Search the entire repository for imports such as:
+- @clerk/expo/native
+- @clerk/expo/google
+- @clerk/expo/apple
+- AuthView
+- UserButton
+- UserProfileView
+- useSignInWithGoogle
+- useSignInWithApple
+
+2. Keep Clerk authentication, but use the JavaScript-only @clerk/expo integration:
+- ClerkProvider
+- useAuth
+- useUser
+- useSignIn
+- useSignUp
+- useOAuth where appropriate
+
+3. For Google login, use Clerk's browser-based OAuth flow rather than the native Google package if needed.
+
+4. For Apple login on iOS:
+- install expo-apple-authentication using the Expo-compatible version:
+  pnpm expo install expo-apple-authentication
+- keep ios.usesAppleSignIn=true
+- implement Apple login without importing Clerk's native UI package if Apple login is currently required
+- otherwise temporarily hide the Apple button until implemented correctly, but do not remove email login
+
+5. Remove any direct dependency or config plugin that installs ClerkKit, ClerkKitUI, or ClerkGoogleSignIn through SPM.
+
+6. Do not edit generated files inside node_modules.
+
+7. Regenerate the native iOS project cleanly:
+- delete artifacts/sellify-mobile/ios
+- run Expo prebuild clean for iOS
+
+8. Verify:
+- pnpm install completes
+- npx expo-doctor passes
+- npx expo prebuild --clean --platform ios completes
+- pod install completes without adding ClerkKit or ClerkKitUI
+- no undefined method package_product_dependencies error remains
+
+9. Preserve:
+- bundle identifier se.sellify.app
+- EAS projectId
+- all app functionality
+- email authentication
+- account deletion
+- push notification configuration
+- existing design
+
+10. Commit and push the fix to GitHub.
+
+Finally report:
+- exact files changed
+- which Clerk native imports were removed
+- which authentication method now replaces them
+- results of Expo Doctor, prebuild and pod install
+- confirmation that the EAS projectId and bundle identifier remain unchanged

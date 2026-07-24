@@ -15,7 +15,7 @@ import {
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as SecureStore from 'expo-secure-store';
-import { ClerkProvider, useAuth } from '@clerk/expo';
+import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import {
   setAuthTokenGetter,
   setBaseUrl,
