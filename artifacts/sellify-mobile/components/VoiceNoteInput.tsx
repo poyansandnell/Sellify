@@ -46,6 +46,9 @@ interface Props {
   /** Append transcribed speech to the latest notes (functional update in the parent). */
   onAppendText: (text: string) => void;
   questions?: string[];
+  /** When set, a send button appears next to the text input for typed notes. */
+  onSend?: () => void;
+  sendPending?: boolean;
 }
 
 /**
@@ -57,6 +60,8 @@ export function VoiceNoteInput({
   onChangeText,
   onAppendText,
   questions,
+  onSend,
+  sendPending,
 }: Props) {
   const colors = useColors();
   const { t } = useI18n();
@@ -148,22 +153,42 @@ export function VoiceNoteInput({
           {t.extraInfoHint}
         </Text>
       )}
-      <TextInput
-        testID="extra-info-input"
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={t.extraInfoPlaceholder}
-        placeholderTextColor={colors.mutedForeground}
-        multiline
-        style={[
-          styles.input,
-          {
-            backgroundColor: colors.background,
-            borderColor: colors.border,
-            color: colors.foreground,
-          },
-        ]}
-      />
+      <View style={styles.inputRow}>
+        <TextInput
+          testID="extra-info-input"
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={t.extraInfoPlaceholder}
+          placeholderTextColor={colors.mutedForeground}
+          multiline
+          style={[
+            styles.input,
+            {
+              flex: 1,
+              backgroundColor: colors.background,
+              borderColor: colors.border,
+              color: colors.foreground,
+            },
+          ]}
+        />
+        {onSend && value.trim() ? (
+          <Pressable
+            testID="send-notes-button"
+            onPress={onSend}
+            disabled={sendPending}
+            style={[
+              styles.sendBtn,
+              { backgroundColor: colors.primary, opacity: sendPending ? 0.6 : 1 },
+            ]}
+          >
+            {sendPending ? (
+              <ActivityIndicator size="small" color={colors.primaryForeground} />
+            ) : (
+              <Feather name="send" size={20} color={colors.primaryForeground} />
+            )}
+          </Pressable>
+        ) : null}
+      </View>
       <Pressable
         testID="mic-button"
         onPress={toggleRecording}
@@ -235,6 +260,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Inter_400Regular',
     textAlignVertical: 'top',
+  },
+  inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
+  sendBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   micBtn: {
     flexDirection: 'row',

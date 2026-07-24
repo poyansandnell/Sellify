@@ -478,6 +478,10 @@ export default function SellScreen() {
             onChangeText={setNotes}
             onAppendText={appendNotes}
             questions={draft?.questions ?? []}
+            onSend={
+              step === 'review' && draft ? () => runRefine(notes) : undefined
+            }
+            sendPending={refineDraft.isPending}
           />
         ) : null}
 
