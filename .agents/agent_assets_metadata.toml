@@ -18,3 +18,9 @@ id = "fcHAY1t8-bL2SSZgpPqvD"
 uri = "file://attached_assets/store/out/ipad-home-sv.png"
 type = "image"
 title = "Exempel: iPad 13\" (2048×2732)"
+
+[[outputs]]
+id = "UQ7X8QtGXuXVAml4G7bBR"
+uri = "file://attached_assets/store/sellify-lanseringspaket.zip"
+type = "unspecified"
+title = "Sellify lanseringspaket (bilder + länkar + instruktioner)"
