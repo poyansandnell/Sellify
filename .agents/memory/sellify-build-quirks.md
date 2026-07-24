@@ -15,3 +15,6 @@ description: Non-obvious environment/toolchain lessons from the first Sellify bu
 
 ## App Store / EAS prep
 Store submission assets live in `attached_assets/store/` (composed via `scripts/store-screenshots.mjs`, sharp) and docs (APP_STORE_CONNECT.md, APP_PRIVACY_GUIDE.md, EAS_RELEASE_GUIDE.md) in `artifacts/sellify-mobile/`. Account deletion: delete the Clerk user FIRST (fail loudly), then purge app data in one drizzle transaction — never return 204 if the identity still exists. Apple Sign-In offered via Clerk `oauth_apple` because Google login exists on iOS.
+
+## Clerk on Expo iOS
+`@clerk/expo` v3 ships a native module whose podspec adds ClerkKit/ClerkKitUI via SPM — this crashes RN 0.81's `spm.rb` ("undefined method package_product_dependencies for nil") on EAS iOS builds in the pnpm monorepo. Use the JS-only `@clerk/clerk-expo` v2 (same API: ClerkProvider, useAuth, useSSO, useSignIn/useSignUp in the main entry — no `/legacy` path). `ios.usesAppleSignIn` also requires `expo-apple-authentication` installed or prebuild warns. Never let `expo prebuild` keep its package.json edits (it duplicates expo/react/react-native into dependencies, conflicting with the pinned devDeps/catalog); revert those and delete the generated `ios/` dir — builds stay managed via EAS.
