@@ -61,6 +61,7 @@
   },
   "dependencies": {
     "@react-navigation/elements": "^2.9.35",
+    "expo-asset": "~12.0.13",
     "expo-audio": "~1.1.1",
     "expo-device": "~8.0.10",
     "expo-file-system": "~19.0.23",

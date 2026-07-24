@@ -1,0 +1,524 @@
+Här är en färdig instruktion att skicka till Replit så att allt förbereds för snabb publicering via EAS, utan Xcode.
+
+Förbered Sellify helt för publicering till App Store via Expo EAS.
+
+Vi ska inte använda Xcode manuellt. Hela flödet ska gå via terminalen med:
+
+* eas build
+* eas submit
+
+Viktig projektinformation
+
+Appnamn: Sellify
+
+iOS bundle identifier:
+
+se.sellify.app
+
+Android package:
+
+se.sellify.app
+
+Appen ska publiceras globalt men ha:
+
+* Svenska som fullt språk.
+* Engelska som fullt språk.
+* Svenska App Store-texter och bilder för Sverige.
+* Engelska App Store-texter och bilder för övriga marknader.
+
+Webbplats och backend finns på den publicerade Replit-adressen.
+
+Policylänkar:
+
+Integritetspolicy:
+
+https://attached-assets-poyansandnell.replit.app/privacy
+
+Användarvillkor:
+
+https://attached-assets-poyansandnell.replit.app/terms
+
+Kontrollera att dessa länkar fungerar publikt efter nästa Publish i Replit.
+
+Målet
+
+Förbered projektet så att jag lokalt endast behöver göra ungefär detta:
+
+cd <mobilappens-mapp>
+npm install
+eas login
+eas init
+eas build --platform ios --profile production
+eas submit --platform ios
+
+Projektet ska vara helt förberett innan dess.
+
+Kontrollera appstrukturen
+
+Identifiera exakt vilken mapp som är mobilappen.
+
+Skriv den exakta sökvägen i slutrapporten.
+
+Exempel:
+
+cd artifacts/sellify-mobile
+
+Gissa inte sökvägen. Kontrollera den i projektet.
+
+Expo-konfiguration
+
+Kontrollera och korrigera app.json eller app.config.ts.
+
+Den ska innehålla korrekt:
+
+* Appnamn: Sellify.
+* Expo slug.
+* Versionsnummer.
+* iOS build number.
+* Android version code.
+* iOS bundle identifier: se.sellify.app.
+* Android package: se.sellify.app.
+* iPhone-stöd.
+* iPad-stöd.
+* Appikon.
+* Splash screen.
+* Orientering.
+* Deep links.
+* Universal links om de används.
+* Support för svenska och engelska.
+* Produktions-URL till backend och webbplats.
+
+Använd inte localhost i produktionskonfigurationen.
+
+Kontrollera att inga gamla namn, gamla bundle identifiers eller tidigare appars URL:er finns kvar.
+
+EAS-konfiguration
+
+Kontrollera eller skapa eas.json.
+
+Den ska minst innehålla:
+
+* development-profil.
+* preview-profil.
+* production-profil.
+
+Production-profilen ska:
+
+* Bygga för App Store.
+* Använda rätt miljövariabler.
+* Använda produktionsservern.
+* Öka eller stödja korrekt build number.
+* Vara redo för eas submit.
+
+Använd modern EAS-konfiguration.
+
+Lägg inte in privata Apple-uppgifter eller hemligheter direkt i repot.
+
+Expo-projektkoppling
+
+Kontrollera om projektet redan har:
+
+* extra.eas.projectId
+* Expo owner.
+* Korrekt slug.
+
+Om projectId saknas ska projektet vara förberett för att jag kör:
+
+eas init
+
+Förklara tydligt om eas init behöver köras eller om projektet redan är kopplat.
+
+Ändra inte till ett påhittat Expo project ID.
+
+Behörigheter på iOS
+
+Kontrollera att endast behörigheter som verkligen används finns med.
+
+Appen kan behöva:
+
+* Kamera.
+* Bildbibliotek.
+* Spara bilder.
+* Mikrofon, endast om appen faktiskt använder den.
+* Plats, endast om appen faktiskt använder den.
+* Pushnotiser.
+
+Alla behörighetstexter ska finnas på naturlig svenska och engelska.
+
+Exempel på svenska texter:
+
+Kamera:
+
+Sellify behöver tillgång till kameran så att du kan fotografera produkter och skapa annonser.
+
+Bilder:
+
+Sellify behöver tillgång till dina bilder så att du kan välja produktbilder till dina annonser.
+
+Plats:
+
+Sellify använder din plats för att visa annonser i närheten och föreslå rätt ort för din annons.
+
+Mikrofon:
+
+Sellify behöver tillgång till mikrofonen när du använder funktioner för ljud eller video.
+
+Om mikrofonen inte används ska mikrofonbehörigheten tas bort.
+
+Lägg inte till behörigheter bara för säkerhets skull.
+
+Lokalisering
+
+Kontrollera att iOS känner igen svenska och engelska som stödda språk.
+
+Alla systemtexter och behörighetstexter ska vara lokaliserade.
+
+Kontrollera att:
+
+* Svenska visas på svensk iPhone.
+* Engelska visas på engelsk iPhone.
+* Appen kan byta språk utan att krascha.
+* Ingen synlig text saknas.
+* Inga tekniska översättningsnycklar visas för användaren.
+
+App Transport Security och nätverk
+
+Kontrollera att alla produktionsanrop använder HTTPS.
+
+Undvik breda undantag som tillåter all osäker trafik.
+
+Om något ATS-undantag finns ska det motiveras och begränsas till exakt den domän som behövs.
+
+Apple Sign-In
+
+Om appen erbjuder Google-inloggning eller annan tredjepartsinloggning på iOS ska Sign in with Apple också vara korrekt implementerat där Apples regler kräver det.
+
+Kontrollera:
+
+* Entitlements.
+* Expo-konfiguration.
+* Knapp och flöde.
+* Felhantering.
+* Att användaren kan radera sitt konto.
+
+Om Apple-inloggning inte är färdig ska detta rapporteras tydligt, inte döljas.
+
+Kontoradering
+
+Apple kräver normalt att appar med kontoregistrering också erbjuder kontoradering i appen.
+
+Kontrollera att användaren kan:
+
+1. Öppna Profil eller Inställningar.
+2. Välja Radera konto.
+3. Se en tydlig varning.
+4. Bekräfta raderingen.
+5. Få sitt konto och relevanta personuppgifter borttagna eller schemalagda för korrekt radering.
+
+Det får inte endast stå att användaren måste mejla supporten.
+
+App Store-bilder
+
+Kontrollera lanseringspaketet och rapportera den exakta sökvägen till zip-filen.
+
+Bilderna ska vara uppdelade i:
+
+* Svenska iPhone-bilder.
+* Engelska iPhone-bilder.
+* Svenska iPad-bilder.
+* Engelska iPad-bilder.
+
+Filnamn ska tydligt ange:
+
+* Enhet.
+* Bildnummer.
+* Språk.
+
+Exempel:
+
+* iphone-01-sv.png
+* iphone-01-en.png
+* ipad-01-sv.png
+* ipad-01-en.png
+
+Kontrollera automatiskt bildmåtten.
+
+Förväntade mått:
+
+iPhone:
+
+1242 × 2688 px
+
+iPad:
+
+2048 × 2732 px
+
+Rapportera om någon bild har fel mått.
+
+Kontrollera också att bilderna faktiskt visar rätt språk och inte bara har engelska eller svenska filnamn.
+
+Appikon
+
+Kontrollera att appikonen:
+
+* Är kvadratisk.
+* Har rätt upplösning.
+* Inte har transparens på iOS.
+* Inte innehåller rundade hörn som är inbakade i själva bilden.
+* Ser tydlig ut i liten storlek.
+* Inte innehåller en gammal logotyp eller ett gammalt appnamn.
+
+Splash screen
+
+Kontrollera att splash screen:
+
+* Använder Sellifys namn eller logotyp.
+* Inte visar gamla projektuppgifter.
+* Ser bra ut i ljust och mörkt läge om appen stöder båda.
+* Inte beskärs fel på iPhone eller iPad.
+
+Produktionsmiljö
+
+Kontrollera alla miljövariabler.
+
+Skapa en tydlig lista över vilka variabler jag behöver lägga in i EAS.
+
+Exempel:
+
+EXPO_PUBLIC_API_URL
+EXPO_PUBLIC_WEB_URL
+EXPO_PUBLIC_SUPABASE_URL
+EXPO_PUBLIC_SUPABASE_ANON_KEY
+
+Använd de verkliga variabelnamnen från projektet.
+
+Visa inte privata nyckelvärden i rapporten.
+
+Kontrollera särskilt att:
+
+* Inga hemligheter finns hårdkodade i klientappen.
+* Ingen service-role key ligger i mobilen.
+* Ingen .env med hemligheter är committad.
+* Klienten endast använder nycklar som är säkra att exponera.
+* Produktionsprofilen inte använder localhost eller testserver.
+
+Dependencies
+
+Kontrollera:
+
+npm install
+npx expo-doctor
+npx expo export
+
+Använd projektets faktiska pakethanterare om det är pnpm eller yarn.
+
+Kontrollera:
+
+* Att lockfilen matchar pakethanteraren.
+* Att inga kritiska dependency-konflikter finns.
+* Att Expo SDK och React Native-versionerna är kompatibla.
+* Att alla native-paket stöder den aktuella Expo-versionen.
+* Att inga onödiga gamla plugins ligger kvar.
+
+Kör relevanta tester och rätta fel som stoppar EAS-build.
+
+Native-mappar
+
+Eftersom publiceringen ska ske via EAS:
+
+* Undvik manuella ändringar i genererade ios- och android-mappar om de kan lösas via config plugins.
+* Använd Expo-konfiguration och config plugins.
+* Om native-mapparna är genererade och behöver återskapas ska detta dokumenteras tydligt.
+* Kör inte en destruktiv prebuild utan att först kontrollera om projektet innehåller viktiga manuella native-ändringar.
+
+App Store Connect-underlag
+
+Skapa en fil:
+
+APP_STORE_CONNECT.md
+
+Den ska innehålla färdiga texter på svenska och engelska för:
+
+* Appnamn.
+* Undertitel.
+* Promotional text.
+* Full beskrivning.
+* Keywords.
+* Support URL.
+* Marketing URL.
+* Privacy Policy URL.
+* Användarvillkor.
+* Copyright.
+* Primär kategori.
+* Förslag på sekundär kategori.
+* App Review Notes.
+* Testkonto för Apple, om appen kräver inloggning.
+* Instruktioner för hur Apple testar AI-annonsflödet.
+* Förklaring av kamera-, bild- och platsbehörigheter.
+
+Texten ska beskriva appens verkliga funktioner och inte lova funktioner som ännu inte fungerar.
+
+App Review Notes
+
+Förbered tydliga granskningsanteckningar.
+
+Förklara bland annat:
+
+* Att användaren kan ta eller välja produktbilder.
+* Att AI skapar ett annonsförslag.
+* Att användaren granskar och publicerar annonsen.
+* Att varje annons får en egen publik webbsida.
+* Var kontoradering finns.
+* Hur Apple kan testa appen.
+* Om någon funktion kräver särskild behörighet.
+* Om externa marknadsplatskopplingar ännu inte är aktiverade.
+
+App Privacy
+
+Skapa en fil:
+
+APP_PRIVACY_GUIDE.md
+
+Lista exakt vilka datatyper appen faktiskt samlar in.
+
+För varje datatyp ska du ange:
+
+* Om den samlas in.
+* Varför den samlas in.
+* Om den är kopplad till användarens identitet.
+* Om den används för tracking.
+* Vilket alternativ som ska väljas i App Store Connect.
+
+Kontrollera särskilt:
+
+* Namn.
+* E-post.
+* Telefonnummer.
+* Ungefärlig plats.
+* Exakt plats.
+* Foton.
+* Användargenererat innehåll.
+* Meddelanden.
+* Sökningar.
+* Enhets-ID.
+* Diagnostik.
+* Produktinteraktion.
+* Köp eller betalningar, om sådant finns.
+* AI-leverantörer och tredjepartstjänster.
+
+Gissa inte. Utgå från den faktiska koden och de faktiska tjänsterna.
+
+Krypteringsfrågan
+
+Kontrollera om appen endast använder vanlig HTTPS och standardkryptering.
+
+Om korrekt för appen, konfigurera:
+
+ITSAppUsesNonExemptEncryption = false
+
+Rapportera exakt vad som är inställt.
+
+Versionsnummer
+
+Använd:
+
+* Appversion: 1.0.0
+* Första iOS build number: 1
+* Första Android version code: 1
+
+Om dessa redan används i App Store Connect ska build number kunna höjas enkelt.
+
+Git och känsliga filer
+
+Kontrollera .gitignore.
+
+Följande ska normalt inte committas:
+
+* .env
+* .env.local
+* certifikat
+* privata nycklar
+* provisioning-profiler
+* lokala EAS-filer med hemligheter
+* node_modules
+* lokala build-mappar
+
+Radera inga användarfiler eller kod utan anledning.
+
+Skapa publiceringsinstruktion
+
+Skapa en fil:
+
+EAS_RELEASE_GUIDE.md
+
+Den ska innehålla exakta kommandon i rätt ordning.
+
+Instruktionen ska börja med den exakta mobilappsmappen.
+
+Exempelstruktur:
+
+cd <exakt-mobilappsmapp>
+npm install
+npm install -g eas-cli
+eas login
+eas init
+eas build --platform ios --profile production
+eas submit --platform ios
+
+Anpassa kommandona efter projektets riktiga pakethanterare.
+
+Ta även med:
+
+* Hur jag väljer rätt Apple Developer Team.
+* Hur jag låter EAS hantera certifikat.
+* Vad jag ska välja om Apple frågar om distributionscertifikat.
+* Hur jag hittar builden i App Store Connect.
+* Hur jag laddar upp svenska och engelska screenshots.
+* Var policylänkarna ska klistras in.
+* Hur jag skickar appen till granskning.
+
+Ingen manuell Xcode-process
+
+Instruktionen ska inte kräva att jag:
+
+* Öppnar Xcode.
+* Skapar Archive i Xcode.
+* Laddar upp via Organizer.
+* Hanterar provisioning profiles manuellt.
+
+Xcode får endast användas som felsökningsverktyg om en EAS-build senare visar ett native-fel.
+
+Standardflödet ska vara helt EAS-baserat.
+
+Slutrapport
+
+När allt är klart, ge mig en tydlig rapport med:
+
+1. Exakt mobilappsmapp.
+2. Pakethanterare.
+3. Expo SDK-version.
+4. Appversion.
+5. Build number.
+6. Bundle identifier.
+7. Expo slug.
+8. Expo owner, om angivet.
+9. Om eas init behöver köras.
+10. Om Apple Sign-In fungerar.
+11. Om kontoradering fungerar.
+12. Vilka behörigheter appen begär.
+13. Vilka miljövariabler som krävs.
+14. Resultat från Expo Doctor.
+15. Resultat från export eller build-test.
+16. Sökväg till screenshot-paketet.
+17. Sökväg till APP_STORE_CONNECT.md.
+18. Sökväg till APP_PRIVACY_GUIDE.md.
+19. Sökväg till EAS_RELEASE_GUIDE.md.
+20. Eventuella kvarvarande blockerande problem.
+
+Gör alla säkra korrigeringar direkt.
+
+Ändra inte appens design, produktidé eller funktioner om det inte krävs för att lösa ett konkret publiceringsfel.
+
+Målet är att projektet efter detta ska kunna byggas och skickas till Apple så snabbt som möjligt via EAS.
+
+Kör samma smidiga upplägg som för dina andra appar: Replit förbereder allt, sedan EAS Build och EAS Submit från terminalen.

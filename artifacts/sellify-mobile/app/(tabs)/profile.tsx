@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
+  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -11,7 +12,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth, useUser } from '@clerk/expo';
-import { getGetMeQueryKey, useGetMe } from '@workspace/api-client-react';
+import {
+  getGetMeQueryKey,
+  useDeleteMyAccount,
+  useGetMe,
+} from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { useI18n, type Language } from '@/lib/i18n';
 import { EmptyState, PrimaryButton } from '@/components/Ui';
@@ -28,6 +33,31 @@ export default function ProfileScreen() {
   const { data: me } = useGetMe({
     query: { enabled: !!isSignedIn, queryKey: getGetMeQueryKey() },
   });
+  const deleteAccount = useDeleteMyAccount();
+  const [deleting, setDeleting] = useState(false);
+
+  const onDeleteAccount = () => {
+    Alert.alert(t.deleteAccount, t.deleteAccountWarning, [
+      { text: t.cancel, style: 'cancel' },
+      {
+        text: t.deleteAccountConfirm,
+        style: 'destructive',
+        onPress: async () => {
+          if (deleting) return;
+          setDeleting(true);
+          try {
+            await deleteAccount.mutateAsync();
+            await signOut();
+            router.replace('/');
+          } catch {
+            Alert.alert(t.error);
+          } finally {
+            setDeleting(false);
+          }
+        },
+      },
+    ]);
+  };
 
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPad = Platform.OS === 'web' ? 118 : insets.bottom + 90;
@@ -157,6 +187,28 @@ export default function ProfileScreen() {
             <Feather name="log-out" size={18} color={colors.destructive} />
             <Text style={[styles.menuText, { color: colors.destructive }]}>
               {t.signOut}
+            </Text>
+          </Pressable>
+        ) : null}
+
+        {isSignedIn ? (
+          <Pressable
+            testID="delete-account"
+            onPress={onDeleteAccount}
+            disabled={deleting}
+            style={({ pressed }) => [
+              styles.menuRow,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                opacity: pressed || deleting ? 0.6 : 1,
+                marginTop: 12,
+              },
+            ]}
+          >
+            <Feather name="trash-2" size={18} color={colors.destructive} />
+            <Text style={[styles.menuText, { color: colors.destructive }]}>
+              {t.deleteAccount}
             </Text>
           </Pressable>
         ) : null}

@@ -862,6 +862,12 @@ export const GetMyFavoritesResponse = zod.array(GetMyFavoritesResponseItem)
 
 
 /**
+ * @summary Permanently delete the current user's account and all associated data
+ */
+export const DeleteMyAccountResponse = zod.void()
+
+
+/**
  * @summary Register a device push token for the current user
  */
 export const savePushTokenBodyTokenMax = 400;

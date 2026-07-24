@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
+import { Feather, FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useSSO } from '@clerk/expo';
@@ -46,12 +46,12 @@ export default function SignInScreen() {
     else router.replace('/');
   }, [router]);
 
-  const onGoogle = async () => {
+  const onOauth = async (strategy: 'oauth_google' | 'oauth_apple') => {
     setError('');
     setBusy(true);
     try {
       const { createdSessionId, setActive } = await startSSOFlow({
-        strategy: 'oauth_google',
+        strategy,
       });
       if (createdSessionId && setActive) {
         await setActive({ session: createdSessionId });
@@ -156,7 +156,7 @@ export default function SignInScreen() {
           <>
             <Pressable
               testID="google-sign-in"
-              onPress={onGoogle}
+              onPress={() => onOauth('oauth_google')}
               disabled={busy}
               style={({ pressed }) => [
                 styles.googleBtn,
@@ -178,6 +178,28 @@ export default function SignInScreen() {
                 </>
               )}
             </Pressable>
+
+            {Platform.OS === 'ios' ? (
+              <Pressable
+                testID="apple-sign-in"
+                onPress={() => onOauth('oauth_apple')}
+                disabled={busy}
+                style={({ pressed }) => [
+                  styles.googleBtn,
+                  {
+                    backgroundColor: '#000',
+                    borderColor: '#000',
+                    opacity: pressed || busy ? 0.7 : 1,
+                    marginTop: 10,
+                  },
+                ]}
+              >
+                <FontAwesome name="apple" size={20} color="#fff" />
+                <Text style={[styles.googleText, { color: '#fff' }]}>
+                  {t.continueWithApple}
+                </Text>
+              </Pressable>
+            ) : null}
 
             <View style={styles.orRow}>
               <View style={[styles.orLine, { backgroundColor: colors.border }]} />

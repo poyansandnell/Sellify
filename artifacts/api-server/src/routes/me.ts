@@ -1,8 +1,15 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { clerkClient } from "@clerk/express";
-import { desc, eq, inArray, sql } from "drizzle-orm";
+import { desc, eq, inArray, or, sql } from "drizzle-orm";
 import { db } from "@workspace/db";
-import { favorites, listings, profiles, pushTokens } from "@workspace/db/schema";
+import {
+  conversations,
+  favorites,
+  listings,
+  messages,
+  profiles,
+  pushTokens,
+} from "@workspace/db/schema";
 import { SavePushTokenBody, UpdateMeBody } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
 import { toListingDtos } from "../lib/listingUtils";
@@ -111,6 +118,57 @@ router.get("/me/favorites", requireAuth, async (req: Request, res: Response) => 
     .where(inArray(listings.id, favs.map((f) => f.listingId)))
     .orderBy(desc(listings.createdAt));
   res.json(await toListingDtos(rows, userId));
+});
+
+// Permanently delete the user's account: all app data + the Clerk user.
+// Apple requires in-app account deletion for apps with account creation.
+router.post("/me/delete", requireAuth, async (req: Request, res: Response) => {
+  const { userId } = req as AuthedRequest;
+
+  // Delete the Clerk identity first: if this fails, nothing else has changed and
+  // the client gets an honest error instead of a false "deleted" response.
+  try {
+    await clerkClient.users.deleteUser(userId);
+  } catch (err) {
+    console.error("Failed to delete Clerk user", userId, err);
+    res.status(502).json({ error: { message: "Account deletion failed, please try again" } });
+    return;
+  }
+
+  // Purge all app data atomically. If this throws after the Clerk user is gone,
+  // the account can no longer sign in; the orphaned rows are logged for cleanup.
+  try {
+    await db.transaction(async (tx) => {
+      const convs = await tx
+        .select({ id: conversations.id })
+        .from(conversations)
+        .where(or(eq(conversations.buyerId, userId), eq(conversations.sellerId, userId)));
+      const convIds = convs.map((c) => c.id);
+      if (convIds.length > 0) {
+        await tx.delete(messages).where(inArray(messages.conversationId, convIds));
+        await tx.delete(conversations).where(inArray(conversations.id, convIds));
+      }
+
+      const own = await tx
+        .select({ id: listings.id })
+        .from(listings)
+        .where(eq(listings.sellerId, userId));
+      const ownIds = own.map((l) => l.id);
+      if (ownIds.length > 0) {
+        await tx.delete(favorites).where(inArray(favorites.listingId, ownIds));
+      }
+      await tx.delete(favorites).where(eq(favorites.userId, userId));
+      await tx.delete(listings).where(eq(listings.sellerId, userId));
+      await tx.delete(pushTokens).where(eq(pushTokens.userId, userId));
+      await tx.delete(profiles).where(eq(profiles.id, userId));
+    });
+  } catch (err) {
+    console.error("Account data purge failed after Clerk deletion", userId, err);
+    res.status(500).json({ error: { message: "Account deleted but data cleanup failed" } });
+    return;
+  }
+
+  res.status(204).end();
 });
 
 router.post("/me/push-token", requireAuth, async (req: Request, res: Response) => {

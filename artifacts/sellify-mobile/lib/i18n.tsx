@@ -88,6 +88,11 @@ const sv = {
   createListing: 'Skapa annons',
   aiUpdated: 'Texten är uppdaterad med dina detaljer',
   cityRequired: 'Fyll i vilken stad du finns i innan du publicerar',
+  deleteAccount: 'Radera konto',
+  deleteAccountWarning:
+    'Ditt konto, dina annonser, meddelanden och favoriter raderas permanent. Detta går inte att ångra.',
+  deleteAccountConfirm: 'Radera permanent',
+  continueWithApple: 'Fortsätt med Apple',
   copyListingTitle: 'Skapa liknande annons',
   copyListingReplace: 'Du har en påbörjad annons. Vill du ersätta den med en kopia?',
   copyListingConfirm: 'Ersätt',
@@ -209,6 +214,11 @@ const en: typeof sv = {
   createListing: 'Create listing',
   aiUpdated: 'The text was updated with your details',
   cityRequired: 'Please enter your city before publishing',
+  deleteAccount: 'Delete account',
+  deleteAccountWarning:
+    'Your account, listings, messages and favorites will be permanently deleted. This cannot be undone.',
+  deleteAccountConfirm: 'Delete permanently',
+  continueWithApple: 'Continue with Apple',
   copyListingTitle: 'Create similar listing',
   copyListingReplace: 'You have a listing in progress. Replace it with a copy?',
   copyListingConfirm: 'Replace',

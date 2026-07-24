@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Sellify Mobile",
+    "name": "Sellify",
     "slug": "sellify-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -17,8 +17,10 @@
       "supportsTablet": true,
       "bundleIdentifier": "se.sellify.app",
       "buildNumber": "1",
+      "usesAppleSignIn": true,
       "infoPlist": {
-        "CFBundleAllowMixedLocalizations": true
+        "CFBundleAllowMixedLocalizations": true,
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -36,7 +38,7 @@
       [
         "expo-router",
         {
-          "origin": "https://replit.com/"
+          "origin": "https://attached-assets-poyansandnell.replit.app/"
         }
       ],
       "expo-font",
@@ -60,7 +62,8 @@
         {
           "microphonePermission": "Sellify använder mikrofonen så att du kan berätta om din vara med rösten."
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true,
