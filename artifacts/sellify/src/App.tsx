@@ -22,6 +22,8 @@ import Favorites from '@/pages/favorites';
 import Profile from '@/pages/profile';
 
 import Search from '@/pages/search';
+import Privacy from '@/pages/privacy';
+import Terms from '@/pages/terms';
 
 import { publishableKeyFromHost } from '@clerk/react/internal';
 
@@ -49,6 +51,8 @@ function AppShell() {
         <Route path="/sign-up/*?" component={SignUpPage} />
         <Route path="/listing/:slug" component={ListingDetail} />
         <Route path="/search" component={Search} />
+        <Route path="/privacy" component={Privacy} />
+        <Route path="/terms" component={Terms} />
         
         <Route path="/sell"><ProtectedRoute><Sell /></ProtectedRoute></Route>
         <Route path="/messages"><ProtectedRoute><Messages /></ProtectedRoute></Route>

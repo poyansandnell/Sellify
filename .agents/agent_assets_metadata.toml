@@ -1,0 +1,20 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "a02xbfg42n0P8ayGVZBVE"
+uri = "file://attached_assets/store/out/sellify-app-store-bilder.zip"
+type = "unspecified"
+title = "App Store-bilder (iPhone + iPad, sv + en)"
+
+[[outputs]]
+id = "G9sx_Cyj1q5fAc0Yrlm47"
+uri = "file://attached_assets/store/out/iphone-home-sv.png"
+type = "image"
+title = "Exempel: iPhone 6,5\" (1242×2688)"
+
+[[outputs]]
+id = "fcHAY1t8-bL2SSZgpPqvD"
+uri = "file://attached_assets/store/out/ipad-home-sv.png"
+type = "image"
+title = "Exempel: iPad 13\" (2048×2732)"

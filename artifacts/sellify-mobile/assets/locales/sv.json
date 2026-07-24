@@ -1,0 +1,7 @@
+{
+  "CFBundleDisplayName": "Sellify",
+  "NSLocationWhenInUseUsageDescription": "Sellify använder din plats för att fylla i rätt stad i dina annonser.",
+  "NSMicrophoneUsageDescription": "Sellify använder mikrofonen så att du kan berätta om din vara med rösten.",
+  "NSPhotoLibraryUsageDescription": "Sellify behöver åtkomst till dina bilder för att du ska kunna lägga till foton i dina annonser.",
+  "NSCameraUsageDescription": "Sellify använder kameran för att fotografera varor till dina annonser."
+}

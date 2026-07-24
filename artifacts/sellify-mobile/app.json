@@ -14,9 +14,21 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": true,
+      "bundleIdentifier": "se.sellify.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "CFBundleAllowMixedLocalizations": true
+      }
     },
-    "android": {},
+    "android": {
+      "package": "se.sellify.app",
+      "versionCode": 1
+    },
+    "locales": {
+      "sv": "./assets/locales/sv.json",
+      "en": "./assets/locales/en.json"
+    },
     "web": {
       "favicon": "./assets/images/icon.png"
     },
@@ -34,6 +46,13 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "Sellify använder din plats för att fylla i rätt stad i dina annonser."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Sellify behöver åtkomst till dina bilder för att du ska kunna lägga till foton i dina annonser.",
+          "cameraPermission": "Sellify använder kameran för att fotografera varor till dina annonser."
         }
       ],
       [

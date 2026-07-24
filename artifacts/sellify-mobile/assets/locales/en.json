@@ -1,0 +1,7 @@
+{
+  "CFBundleDisplayName": "Sellify",
+  "NSLocationWhenInUseUsageDescription": "Sellify uses your location to fill in the right city in your listings.",
+  "NSMicrophoneUsageDescription": "Sellify uses the microphone so you can describe your item with your voice.",
+  "NSPhotoLibraryUsageDescription": "Sellify needs access to your photos so you can add pictures to your listings.",
+  "NSCameraUsageDescription": "Sellify uses the camera to photograph items for your listings."
+}
