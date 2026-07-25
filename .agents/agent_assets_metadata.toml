@@ -24,3 +24,9 @@ id = "UQ7X8QtGXuXVAml4G7bBR"
 uri = "file://attached_assets/store/sellify-lanseringspaket.zip"
 type = "unspecified"
 title = "Sellify lanseringspaket (bilder + App Store-underlag)"
+
+[[outputs]]
+id = "atKQZu6xOFGsSAGFAhT9w"
+uri = "file://attached_assets/store/expo-qr.png"
+type = "image"
+title = "QR-kod – öppna Sellify i Expo Go"
