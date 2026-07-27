@@ -23,10 +23,28 @@ title = "Exempel: iPad 13\" (2048×2732)"
 id = "UQ7X8QtGXuXVAml4G7bBR"
 uri = "file://attached_assets/store/sellify-lanseringspaket.zip"
 type = "unspecified"
-title = "Sellify lanseringspaket (bilder + App Store-underlag)"
+title = "Sellify lanseringspaket (uppdaterade EN-bilder)"
 
 [[outputs]]
 id = "atKQZu6xOFGsSAGFAhT9w"
 uri = "file://attached_assets/store/expo-qr.png"
 type = "image"
 title = "QR-kod – öppna Sellify i Expo Go"
+
+[[outputs]]
+id = "3ungHFu5urmhK2u1D95-U"
+uri = "file://attached_assets/store/out/iphone-01-en.png"
+type = "image"
+title = "iPhone – Home (EN)"
+
+[[outputs]]
+id = "el7dF33ZZ2HsujZfn18y3"
+uri = "file://attached_assets/store/out/iphone-02-en.png"
+type = "image"
+title = "iPhone – Listing (EN)"
+
+[[outputs]]
+id = "2UypVyc3lm3PwQyslaKH8"
+uri = "file://attached_assets/store/out/iphone-03-en.png"
+type = "image"
+title = "iPhone – Search (EN)"
