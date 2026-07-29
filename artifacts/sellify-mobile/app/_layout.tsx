@@ -29,32 +29,7 @@ SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
-// Clerk config. In development the publishable key is injected via
-// EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY (see the dev script). In standalone
-// production builds (EAS/TestFlight) those env vars are not available, so we
-// derive the same production key and proxy URL from EXPO_PUBLIC_DOMAIN that
-// the backend derives on its side (publishableKeyFromHost + /api/__clerk
-// proxy) — they must match or every authenticated request is rejected.
-const CLERK_PROXY_PATH = '/api/__clerk';
-const domainForClerk = process.env.EXPO_PUBLIC_DOMAIN || '';
-
-function derivedPublishableKey(host: string): string {
-  if (!host) return '';
-  const frontendApi = `clerk.${host.toLowerCase().replace(/:\d+$/, '')}`;
-  // btoa is available in React Native (Hermes) and on web.
-  return `pk_live_${btoa(`${frontendApi}$`).replace(/=+$/, '')}`;
-}
-
-const envPubKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY || '';
-// A pk_test_ (development-instance) key must be used as-is and without a
-// proxy; otherwise fall back to the production key derived from the domain.
-const clerkPubKey = envPubKey.startsWith('pk_test_')
-  ? envPubKey
-  : envPubKey || derivedPublishableKey(domainForClerk);
-const clerkProxyUrl = clerkPubKey.startsWith('pk_test_')
-  ? undefined
-  : process.env.EXPO_PUBLIC_CLERK_PROXY_URL ||
-    (domainForClerk ? `https://${domainForClerk}${CLERK_PROXY_PATH}` : undefined);
+import { clerkPubKey, clerkProxyUrl } from '@/lib/clerkConfig';
 
 const tokenCache = {
   async getToken(key: string) {
@@ -78,8 +53,13 @@ function AuthTokenBridge() {
   useEffect(() => {
     setAuthTokenGetter(async () => {
       try {
-        return (await getToken()) ?? null;
-      } catch {
+        const token = await getToken();
+        if (!token) {
+          console.warn('[auth] getToken() returned null — request will be sent unauthenticated');
+        }
+        return token ?? null;
+      } catch (e) {
+        console.warn('[auth] getToken() threw:', e instanceof Error ? e.message : String(e));
         return null;
       }
     });

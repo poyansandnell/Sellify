@@ -34,6 +34,7 @@ import { EmptyState, PrimaryButton, SecondaryButton } from '@/components/Ui';
 import { VoiceNoteInput } from '@/components/VoiceNoteInput';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { takeCopyListing } from '@/lib/copyListing';
+import { errorDetail } from '@/lib/apiError';
 import { imageUrl } from '@/lib/utils';
 import colorsConst from '@/constants/colors';
 
@@ -274,19 +275,26 @@ export default function SellScreen() {
         assets.map(async (asset, i) => {
           const { uri, contentType } = await compressAsset(asset);
           const blob = await (await fetch(uri)).blob();
-          const { uploadURL, objectPath } = await requestUploadUrl.mutateAsync({
-            data: {
-              name: asset.fileName ?? `photo-${Date.now()}-${i}.jpg`,
-              size: Math.max(1, blob.size),
-              contentType,
-            },
-          });
+          let uploadURL: string;
+          let objectPath: string;
+          try {
+            ({ uploadURL, objectPath } = await requestUploadUrl.mutateAsync({
+              data: {
+                name: asset.fileName ?? `photo-${Date.now()}-${i}.jpg`,
+                size: Math.max(1, blob.size),
+                contentType,
+              },
+            }));
+          } catch (e) {
+            throw new Error(errorDetail(t.uploadStepRequestUrl, e));
+          }
           const putRes = await fetch(uploadURL, {
             method: 'PUT',
             body: blob,
             headers: { 'Content-Type': contentType },
           });
-          if (!putRes.ok) throw new Error(`Upload failed: ${putRes.status}`);
+          if (!putRes.ok)
+            throw new Error(`${t.uploadStepPut}: HTTP ${putRes.status}`);
           return { localUri: asset.uri, objectPath } as UploadedImage;
         }),
       );
@@ -315,8 +323,8 @@ export default function SellScreen() {
       setPrice(String(Math.round(result.suggestedPrice)));
       setStep('review');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch {
-      Alert.alert(t.error);
+    } catch (e) {
+      Alert.alert(t.error, errorDetail(t.uploadStepAnalyze, e));
       setStep(returnTo);
     }
   };
@@ -340,8 +348,11 @@ export default function SellScreen() {
       if (uploaded.length > 0 && step === 'photos') {
         await runAnalysis([...images, ...uploaded], notes);
       }
-    } catch {
-      Alert.alert(t.uploadFailed);
+    } catch (e) {
+      Alert.alert(
+        t.uploadFailed,
+        e instanceof Error ? e.message : String(e),
+      );
     }
   };
 
@@ -395,8 +406,8 @@ export default function SellScreen() {
       setNotes('');
       Alert.alert(t.published);
       router.push(`/listing/${published.slug}`);
-    } catch {
-      Alert.alert(t.error);
+    } catch (e) {
+      Alert.alert(t.error, errorDetail(t.uploadStepPublish, e));
     }
   };
 

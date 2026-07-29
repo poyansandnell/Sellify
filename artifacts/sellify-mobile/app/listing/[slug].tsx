@@ -29,6 +29,7 @@ import {
 import { useColors } from '@/hooks/useColors';
 import { conditionLabel, useI18n } from '@/lib/i18n';
 import { formatPrice, imageUrl, listingUrl } from '@/lib/utils';
+import { errorDetail, errorStatus } from '@/lib/apiError';
 import { ListingCard } from '@/components/ListingCard';
 import {
   EmptyState,
@@ -120,8 +121,12 @@ export default function ListingDetailScreen() {
       setShowMessageBox(false);
       queryClient.invalidateQueries();
       router.push(`/conversation/${conv.id}`);
-    } catch {
-      Alert.alert(t.error);
+    } catch (e) {
+      if (errorStatus(e) === 401) {
+        router.push('/sign-in');
+        return;
+      }
+      Alert.alert(t.error, errorDetail(t.sendMessage, e));
     }
   };
 

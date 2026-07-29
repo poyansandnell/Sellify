@@ -1,0 +1,42 @@
+Build 5 testad i TestFlight – båda produktionsfelen kvarstår
+
+Jag har nu verifierat att rätt GitHub-kod och Build 5 är installerad i TestFlight. Följande fungerar fortfarande inte:
+
+1. Skicka meddelande till en säljare
+2. Ladda upp bild / skapa annons
+
+Tidigare loggar visade 401 på autentiserade anrop och ni ändrade Clerk-konfigurationen i app/_layout.tsx. Eftersom felet kvarstår måste ni nu felsöka den faktiska Build 5-trafiken i produktion och inte anta att Clerk-fixen fungerar.
+
+Gör följande:
+
+* Kontrollera produktionsloggar exakt när jag reproducerar båda felen.
+* Bekräfta aktuell statuskod för:
+    * POST /api/conversations
+    * första meddelandet i konversationen
+    * POST /api/storage/uploads/request-url
+    * POST /api/listings
+    * GET /api/me
+* Logga om Authorization-header finns.
+* Logga om getToken() returnerar en riktig token eller null.
+* Logga vilken Clerk publishable key och proxy URL som faktiskt används i den byggda iOS-appen, utan att skriva ut hemliga värden.
+* Verifiera att tokenens issuer/audience matchar det backend förväntar sig.
+* Kontrollera att den nya Clerk-konfigurationen faktiskt används av ClerkProvider.
+* Kontrollera om appen återanvänder en gammal ogiltig session från SecureStore.
+* Lägg till en tillfällig debugruta i appen som visar:
+    * inloggad/utloggad
+    * userId
+    * token finns: ja/nej
+    * API-bas-URL
+    * senaste HTTP-status
+* För bilduppladdningen: separera fel vid auth, request-url, själva filuppladdningen och AI-analysen så att rätt fel visas.
+* För meddelanden: separera fel vid skapande av konversation, skickande av meddelande och pushnotis.
+* Pushnotisfel får inte göra att ett redan sparat meddelande visas som misslyckat.
+
+Viktigt:
+
+* Testa mot samma produktionsbackend som TestFlight använder.
+* Verifiera lösningen med ett riktigt produktionskonto.
+* Pusha fixen till main.
+* Redovisa exakt grundorsak, ändrade filer och vilka statuskoder som bekräftar att det fungerar.
+
+Bygg inte bara en ny version utan att först bevisa i loggarna varför Build 5 fortfarande misslyckas.

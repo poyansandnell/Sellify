@@ -17,6 +17,21 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 
 let _baseUrl: string | null = null;
 let _authTokenGetter: AuthTokenGetter | null = null;
+let _lastHttpStatus: number | null = null;
+let _lastAuthHeaderSent = false;
+
+/**
+ * Diagnostics: status code of the most recent API response made through
+ * `customFetch`, and whether an Authorization header was attached to that
+ * request. Intended for temporary in-app debug panels.
+ */
+export function getLastHttpStatus(): number | null {
+  return _lastHttpStatus;
+}
+
+export function getLastAuthHeaderSent(): boolean {
+  return _lastAuthHeaderSent;
+}
 
 /**
  * Set a base URL that is prepended to every relative request URL
@@ -360,7 +375,9 @@ export async function customFetch<T = unknown>(
 
   const requestInfo = { method, url: resolveUrl(input) };
 
+  _lastAuthHeaderSent = headers.has("authorization");
   const response = await fetch(input, { ...init, method, headers });
+  _lastHttpStatus = response.status;
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);

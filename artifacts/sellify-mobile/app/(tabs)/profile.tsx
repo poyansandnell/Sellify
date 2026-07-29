@@ -17,8 +17,18 @@ import {
   useDeleteMyAccount,
   useGetMe,
 } from '@workspace/api-client-react';
+import {
+  getLastAuthHeaderSent,
+  getLastHttpStatus,
+} from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { useI18n, type Language } from '@/lib/i18n';
+import {
+  BUILD_TAG,
+  apiBaseUrl,
+  clerkProxyUrl,
+  clerkPubKey,
+} from '@/lib/clerkConfig';
 import { EmptyState, PrimaryButton } from '@/components/Ui';
 import colorsConst from '@/constants/colors';
 
@@ -27,8 +37,41 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t, language, setLanguage } = useI18n();
-  const { isSignedIn, signOut } = useAuth();
+  const { isSignedIn, signOut, userId, getToken } = useAuth();
   const { user } = useUser();
+
+  // Temporary debug panel (activated by tapping the heading 5 times).
+  const [debugTaps, setDebugTaps] = useState(0);
+  const [debugInfo, setDebugInfo] = useState<string | null>(null);
+  const showDebug = async () => {
+    let tokenState = 'nej';
+    try {
+      tokenState = (await getToken()) ? 'ja' : 'nej (null)';
+    } catch (e) {
+      tokenState = `fel: ${e instanceof Error ? e.message : String(e)}`;
+    }
+    setDebugInfo(
+      [
+        `build: ${BUILD_TAG}`,
+        `inloggad: ${isSignedIn ? 'ja' : 'nej'}`,
+        `userId: ${userId ?? '–'}`,
+        `token finns: ${tokenState}`,
+        `API-bas: ${apiBaseUrl}`,
+        `clerk-nyckel: ${clerkPubKey ? clerkPubKey.slice(0, 16) + '…' : 'SAKNAS'}`,
+        `clerk-proxy: ${clerkProxyUrl ?? 'ingen'}`,
+        `senaste HTTP-status: ${getLastHttpStatus() ?? '–'}`,
+        `Authorization skickades: ${getLastAuthHeaderSent() ? 'ja' : 'nej'}`,
+      ].join('\n'),
+    );
+  };
+  const onHeadingTap = () => {
+    const n = debugTaps + 1;
+    setDebugTaps(n);
+    if (n >= 5) {
+      setDebugTaps(0);
+      void showDebug();
+    }
+  };
 
   const { data: me } = useGetMe({
     query: { enabled: !!isSignedIn, queryKey: getGetMeQueryKey() },
@@ -98,9 +141,33 @@ export default function ProfileScreen() {
           paddingHorizontal: 16,
         }}
       >
-        <Text style={[styles.heading, { color: colors.foreground }]}>
+        <Text
+          style={[styles.heading, { color: colors.foreground }]}
+          onPress={onHeadingTap}
+        >
           {t.profile}
         </Text>
+
+        {debugInfo ? (
+          <Pressable
+            onPress={() => setDebugInfo(null)}
+            style={[
+              styles.card,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <Text
+              style={{
+                fontSize: 12,
+                fontFamily: 'Inter_400Regular',
+                color: colors.mutedForeground,
+              }}
+              selectable
+            >
+              {debugInfo}
+            </Text>
+          </Pressable>
+        ) : null}
 
         {isSignedIn ? (
           <>
