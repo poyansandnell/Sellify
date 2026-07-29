@@ -1,0 +1,58 @@
+Build 6 testad i TestFlight – Clerk-sessionen är fortfarande trasig
+
+Nu är rätt build installerad. Inloggningssidan öppnas när jag försöker skicka meddelande, men det går inte att logga in.
+
+Aktuella fel:
+
+1. E-postinloggning visar:
+    Session already exists
+2. Google-inloggning fungerar inte.
+3. Apple-inloggning fungerar inte.
+4. Knappen/länken Skapa konto gör ingenting.
+5. Vid bilduppladdning visas:
+    Begära uppladdningslänk: inte inloggad (401)
+    Det är fel användarflöde. Om användaren inte är inloggad ska appen öppna inloggningsvyn eller visa exempelvis:
+    Du behöver logga in för att lägga upp en annons.
+
+Det centrala problemet verkar vara att Clerk hittar en befintlig lokal session, men appen behandlar användaren som utloggad och kan inte hämta en giltig token.
+
+Fixa följande:
+
+* Undersök varför Clerk visar Session already exists samtidigt som getToken() saknas eller API-anrop får 401.
+* Kontrollera isLoaded, isSignedIn, userId, sessionId, activeSession och resultatet från getToken().
+* Vid Session already exists: använd den befintliga sessionen och aktivera den, eller rensa den kontrollerat innan ett nytt loginförsök.
+* E-postformuläret får inte försöka skapa ytterligare en session om en session redan finns.
+* Säkerställ att utloggning verkligen kör Clerk signOut() och rensar SecureStore/cache.
+* Lägg till en funktion för Rensa session och logga in igen om den lokala sessionen är ogiltig.
+* Fixa Google OAuth och Apple OAuth i den riktiga iOS/TestFlight-miljön, inklusive redirect URL/scheme.
+* Kontrollera att OAuth-flödet använder Expo AuthSession/WebBrowser korrekt och att redirecten återvänder till Sellify.
+* Fixa navigeringen för Skapa konto, så att den faktiskt öppnar registreringsflödet.
+* Alla skyddade funktioner ska kontrollera inloggning innan API-anrop:
+    * skicka meddelande
+    * skapa konversation
+    * välja/ladda upp bild
+    * skapa annons
+* Vid utloggad användare: öppna login-modal, inte skicka API-anrop som ger 401.
+* Ett 401-svar ska få appen att visa inloggning, inte ett tekniskt felmeddelande.
+
+Lägg också till tydliga testfall:
+
+* Ny användare → skapa konto → logga in → token finns.
+* Befintlig användare → e-postinloggning.
+* Befintlig användare → Google.
+* Befintlig användare → Apple.
+* Gammal ogiltig SecureStore-session → återställning utan Session already exists.
+* Utloggad användare trycker på meddelande → login öppnas.
+* Utloggad användare trycker på bild → login öppnas.
+* Inloggad användare skickar meddelande → inget 401.
+* Inloggad användare laddar upp bild → inget 401.
+
+Pusha inte bara en ny byggmärkning. Redovisa exakt:
+
+* varför Session already exists uppstod,
+* varför Google/Apple inte slutfördes,
+* varför Skapa konto inte navigerade,
+* vilka filer som ändrades,
+* och hur ni verifierade att getToken() returnerar en giltig token i iOS-produktion.
+
+Bilderna från TestFlight visar både Session already exists och bilduppladdningens 401-fel.

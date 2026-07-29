@@ -123,6 +123,7 @@ export default function ListingDetailScreen() {
       router.push(`/conversation/${conv.id}`);
     } catch (e) {
       if (errorStatus(e) === 401) {
+        Alert.alert(t.sessionExpired);
         router.push('/sign-in');
         return;
       }

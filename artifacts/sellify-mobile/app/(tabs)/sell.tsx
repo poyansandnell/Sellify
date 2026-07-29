@@ -34,7 +34,7 @@ import { EmptyState, PrimaryButton, SecondaryButton } from '@/components/Ui';
 import { VoiceNoteInput } from '@/components/VoiceNoteInput';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { takeCopyListing } from '@/lib/copyListing';
-import { errorDetail } from '@/lib/apiError';
+import { errorDetail, errorStatus, StepError } from '@/lib/apiError';
 import { imageUrl } from '@/lib/utils';
 import colorsConst from '@/constants/colors';
 
@@ -286,7 +286,10 @@ export default function SellScreen() {
               },
             }));
           } catch (e) {
-            throw new Error(errorDetail(t.uploadStepRequestUrl, e));
+            throw new StepError(
+              errorDetail(t.uploadStepRequestUrl, e),
+              errorStatus(e),
+            );
           }
           const putRes = await fetch(uploadURL, {
             method: 'PUT',
@@ -294,7 +297,10 @@ export default function SellScreen() {
             headers: { 'Content-Type': contentType },
           });
           if (!putRes.ok)
-            throw new Error(`${t.uploadStepPut}: HTTP ${putRes.status}`);
+            throw new StepError(
+              `${t.uploadStepPut}: HTTP ${putRes.status}`,
+              putRes.status,
+            );
           return { localUri: asset.uri, objectPath } as UploadedImage;
         }),
       );
@@ -324,6 +330,12 @@ export default function SellScreen() {
       setStep('review');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e) {
+      if (errorStatus(e) === 401) {
+        Alert.alert(t.sessionExpired);
+        setStep(returnTo);
+        router.push('/sign-in');
+        return;
+      }
       Alert.alert(t.error, errorDetail(t.uploadStepAnalyze, e));
       setStep(returnTo);
     }
@@ -349,6 +361,11 @@ export default function SellScreen() {
         await runAnalysis([...images, ...uploaded], notes);
       }
     } catch (e) {
+      if (errorStatus(e) === 401) {
+        Alert.alert(t.sessionExpired);
+        router.push('/sign-in');
+        return;
+      }
       Alert.alert(
         t.uploadFailed,
         e instanceof Error ? e.message : String(e),
@@ -407,6 +424,11 @@ export default function SellScreen() {
       Alert.alert(t.published);
       router.push(`/listing/${published.slug}`);
     } catch (e) {
+      if (errorStatus(e) === 401) {
+        Alert.alert(t.sessionExpired);
+        router.push('/sign-in');
+        return;
+      }
       Alert.alert(t.error, errorDetail(t.uploadStepPublish, e));
     }
   };

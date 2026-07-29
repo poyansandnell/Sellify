@@ -13,8 +13,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { useSSO } from '@clerk/clerk-expo';
+import * as AuthSession from 'expo-auth-session';
+import { useClerk, useSSO } from '@clerk/clerk-expo';
 import { useSignIn, useSignUp } from '@clerk/clerk-expo';
+import { clearClerkTokenCache } from '@/lib/clerkSession';
 import { useColors } from '@/hooks/useColors';
 import { useI18n } from '@/lib/i18n';
 import { PrimaryButton } from '@/components/Ui';
@@ -33,6 +35,7 @@ export default function SignInScreen() {
   const { signIn, setActive: setActiveSignIn, isLoaded: signInLoaded } = useSignIn();
   const { signUp, setActive: setActiveSignUp, isLoaded: signUpLoaded } = useSignUp();
   const { startSSOFlow } = useSSO();
+  const clerk = useClerk();
 
   const [mode, setMode] = useState<Mode>('sign-in');
   const [email, setEmail] = useState('');
@@ -40,27 +43,78 @@ export default function SignInScreen() {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [showClearSession, setShowClearSession] = useState(false);
 
   const done = useCallback(() => {
     if (router.canGoBack()) router.back();
     else router.replace('/');
   }, [router]);
 
+  const isSessionExists = (e: any) =>
+    e?.errors?.some?.((err: any) => err?.code === 'session_exists') ?? false;
+
+  /** Fully reset the local Clerk session: sign out + wipe SecureStore cache. */
+  const resetLocalSession = useCallback(async () => {
+    try {
+      await clerk.signOut();
+    } catch {
+      // ignore — session may already be invalid on the server
+    }
+    await clearClerkTokenCache();
+  }, [clerk]);
+
+  const onClearSession = async () => {
+    setBusy(true);
+    try {
+      await resetLocalSession();
+      setError('');
+      setShowClearSession(false);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const onOauth = async (strategy: 'oauth_google' | 'oauth_apple') => {
     setError('');
     setBusy(true);
     try {
+      // If a stale local session exists, a new SSO attempt will fail with
+      // "session_exists" — clear it up-front so OAuth always starts clean.
+      if (clerk.session) {
+        await resetLocalSession();
+      }
       const { createdSessionId, setActive } = await startSSOFlow({
         strategy,
+        redirectUrl: AuthSession.makeRedirectUri({ path: 'sign-in' }),
       });
       if (createdSessionId && setActive) {
         await setActive({ session: createdSessionId });
         done();
+      } else {
+        // The browser flow returned without a session (cancelled, or extra
+        // verification required) — tell the user instead of failing silently.
+        setError(t.oauthIncomplete);
       }
     } catch (e: any) {
-      setError(e?.errors?.[0]?.message ?? t.error);
+      if (isSessionExists(e)) {
+        await resetLocalSession();
+        setError(t.sessionCleared);
+      } else {
+        setError(e?.errors?.[0]?.message ?? t.error);
+      }
     } finally {
       setBusy(false);
+    }
+  };
+
+  const attemptEmailSignIn = async () => {
+    const attempt = await signIn!.create({
+      identifier: email.trim(),
+      password,
+    });
+    if (attempt.status === 'complete') {
+      await setActiveSignIn?.({ session: attempt.createdSessionId });
+      done();
     }
   };
 
@@ -69,16 +123,21 @@ export default function SignInScreen() {
     setError('');
     setBusy(true);
     try {
-      const attempt = await signIn.create({
-        identifier: email.trim(),
-        password,
-      });
-      if (attempt.status === 'complete') {
-        await setActiveSignIn({ session: attempt.createdSessionId });
-        done();
-      }
+      await attemptEmailSignIn();
     } catch (e: any) {
-      setError(e?.errors?.[0]?.message ?? t.error);
+      if (isSessionExists(e)) {
+        // A stale session from an earlier build blocks new sign-ins.
+        // Clear it and retry once automatically.
+        try {
+          await resetLocalSession();
+          await attemptEmailSignIn();
+        } catch (e2: any) {
+          setError(e2?.errors?.[0]?.message ?? t.error);
+          setShowClearSession(true);
+        }
+      } else {
+        setError(e?.errors?.[0]?.message ?? t.error);
+      }
     } finally {
       setBusy(false);
     }
@@ -89,11 +148,19 @@ export default function SignInScreen() {
     setError('');
     setBusy(true);
     try {
+      if (clerk.session) {
+        await resetLocalSession();
+      }
       await signUp.create({ emailAddress: email.trim(), password });
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       setMode('verify');
     } catch (e: any) {
-      setError(e?.errors?.[0]?.message ?? t.error);
+      if (isSessionExists(e)) {
+        await resetLocalSession();
+        setError(t.sessionCleared);
+      } else {
+        setError(e?.errors?.[0]?.message ?? t.error);
+      }
     } finally {
       setBusy(false);
     }
@@ -146,7 +213,7 @@ export default function SignInScreen() {
           </Text>
         </View>
         <Text style={[styles.title, { color: colors.foreground }]}>
-          {t.signInHero}
+          {mode === 'sign-up' ? t.signUpHero : t.signInHero}
         </Text>
         <Text style={[styles.sub, { color: colors.mutedForeground }]}>
           {t.signInSub}
@@ -249,6 +316,24 @@ export default function SignInScreen() {
               <Text style={[styles.error, { color: colors.destructive }]}>
                 {error}
               </Text>
+            ) : null}
+
+            {showClearSession ? (
+              <Pressable
+                testID="clear-session"
+                onPress={onClearSession}
+                disabled={busy}
+                style={styles.toggle}
+              >
+                <Text
+                  style={[
+                    styles.toggleText,
+                    { color: colors.primary, marginBottom: 12 },
+                  ]}
+                >
+                  {t.clearSession}
+                </Text>
+              </Pressable>
             ) : null}
 
             <PrimaryButton

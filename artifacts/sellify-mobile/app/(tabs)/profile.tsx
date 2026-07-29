@@ -29,6 +29,7 @@ import {
   clerkProxyUrl,
   clerkPubKey,
 } from '@/lib/clerkConfig';
+import { clearClerkTokenCache } from '@/lib/clerkSession';
 import { EmptyState, PrimaryButton } from '@/components/Ui';
 import colorsConst from '@/constants/colors';
 
@@ -240,7 +241,13 @@ export default function ProfileScreen() {
         {isSignedIn ? (
           <Pressable
             testID="sign-out"
-            onPress={() => signOut()}
+            onPress={async () => {
+              try {
+                await signOut();
+              } finally {
+                await clearClerkTokenCache();
+              }
+            }}
             style={({ pressed }) => [
               styles.menuRow,
               {

@@ -14,7 +14,6 @@ import {
 } from '@expo-google-fonts/inter';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import * as SecureStore from 'expo-secure-store';
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import {
   setAuthTokenGetter,
@@ -30,23 +29,7 @@ SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient();
 
 import { clerkPubKey, clerkProxyUrl } from '@/lib/clerkConfig';
-
-const tokenCache = {
-  async getToken(key: string) {
-    try {
-      return await SecureStore.getItemAsync(key);
-    } catch {
-      return null;
-    }
-  },
-  async saveToken(key: string, value: string) {
-    try {
-      await SecureStore.setItemAsync(key, value);
-    } catch {
-      // ignore
-    }
-  },
-};
+import { tokenCache } from '@/lib/clerkSession';
 
 function AuthTokenBridge() {
   const { getToken } = useAuth();
