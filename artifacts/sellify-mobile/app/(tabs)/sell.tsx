@@ -34,7 +34,12 @@ import { EmptyState, PrimaryButton, SecondaryButton } from '@/components/Ui';
 import { VoiceNoteInput } from '@/components/VoiceNoteInput';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { takeCopyListing } from '@/lib/copyListing';
-import { errorDetail, errorStatus, StepError } from '@/lib/apiError';
+import {
+  authFailureDebug,
+  errorDetail,
+  errorStatus,
+  StepError,
+} from '@/lib/apiError';
 import { imageUrl } from '@/lib/utils';
 import colorsConst from '@/constants/colors';
 
@@ -50,7 +55,25 @@ export default function SellScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t, language } = useI18n();
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, getToken } = useAuth();
+
+  // 401 after the API client's automatic token-refresh retry: only open the
+  // login screen if Clerk actually reports signed out; otherwise show the
+  // failure details so the real cause is visible.
+  const handleAuthFailure = async (e: unknown) => {
+    if (!isSignedIn) {
+      Alert.alert(t.sessionExpired);
+      router.push('/sign-in');
+      return;
+    }
+    let hasToken = false;
+    try {
+      hasToken = Boolean(await getToken());
+    } catch {
+      hasToken = false;
+    }
+    Alert.alert(t.error, authFailureDebug(isSignedIn, hasToken, e));
+  };
   const queryClient = useQueryClient();
 
   const [step, setStep] = useState<Step>('photos');
@@ -331,9 +354,8 @@ export default function SellScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e) {
       if (errorStatus(e) === 401) {
-        Alert.alert(t.sessionExpired);
         setStep(returnTo);
-        router.push('/sign-in');
+        await handleAuthFailure(e);
         return;
       }
       Alert.alert(t.error, errorDetail(t.uploadStepAnalyze, e));
@@ -362,8 +384,7 @@ export default function SellScreen() {
       }
     } catch (e) {
       if (errorStatus(e) === 401) {
-        Alert.alert(t.sessionExpired);
-        router.push('/sign-in');
+        await handleAuthFailure(e);
         return;
       }
       Alert.alert(
@@ -425,8 +446,7 @@ export default function SellScreen() {
       router.push(`/listing/${published.slug}`);
     } catch (e) {
       if (errorStatus(e) === 401) {
-        Alert.alert(t.sessionExpired);
-        router.push('/sign-in');
+        await handleAuthFailure(e);
         return;
       }
       Alert.alert(t.error, errorDetail(t.uploadStepPublish, e));

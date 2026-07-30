@@ -34,9 +34,11 @@ import { tokenCache } from '@/lib/clerkSession';
 function AuthTokenBridge() {
   const { getToken } = useAuth();
   useEffect(() => {
-    setAuthTokenGetter(async () => {
+    setAuthTokenGetter(async (opts) => {
       try {
-        const token = await getToken();
+        const token = await getToken(
+          opts?.fresh ? { skipCache: true } : undefined,
+        );
         if (!token) {
           console.warn('[auth] getToken() returned null — request will be sent unauthenticated');
         }

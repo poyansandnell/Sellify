@@ -1,0 +1,46 @@
+Build 7 testad – inloggningsloop kvarstår
+
+Jag kan logga in och appen ser ut att vara inloggad. Men när jag trycker på Kontakta säljaren eller försöker skicka ett meddelande skickas jag direkt tillbaka till inloggningssidan varje gång.
+
+Detta betyder att Build 7 fortfarande har en skillnad mellan Clarks synliga inloggningsstatus och den token som API-klienten använder.
+
+Utred den exakta sekvensen i produktionsloggarna:
+
+1. Kontrollera om isSignedIn, userId, sessionId och getToken() är giltiga precis innan POST /api/conversations.
+2. Logga om Authorization: Bearer ... faktiskt skickas i just detta anrop.
+3. Kontrollera om API-klienten använder rätt getToken från den aktiva Clerk-sessionen eller en gammal/stängd closure.
+4. Kontrollera om custom-fetch.ts skapas innan Clerk har laddats och därför permanent har en tom tokenfunktion.
+5. Kontrollera om token hämtas med fel template/audience.
+6. Logga tokenens issuer, expiration och backendens exakta avslagsorsak.
+7. Kontrollera om 401-hanteringen automatiskt öppnar login även när användaren är inloggad. Den ska då först försöka:
+    * hämta en ny token,
+    * göra om anropet en gång,
+    * och endast visa login om Clerk faktiskt rapporterar utloggad.
+
+Viktigt: lös inte detta genom att bara ändra felmeddelandet eller bygga Build 8. Bevisa först följande i loggarna:
+
+* isSignedIn: true
+* userId finns
+* sessionId finns
+* getToken() returnerar token
+* Authorization-header: true
+* POST /api/conversations returnerar 200/201
+
+Debugpanelen behöver också visa värdena direkt innan meddelandeanropet, inte bara profilskärmens allmänna status.
+
+Lägg till en synlig felsökningsrad efter misslyckat försök:
+
+* Clerk inloggad: ja/nej
+* token finns: ja/nej
+* auth-header skickad: ja/nej
+* HTTP-status
+* serverns avslagsorsak
+
+Jag testar i riktig TestFlight Build 7. Läs produktionsloggarna från senaste testet och redovisa den faktiska grundorsaken innan ni pushar nästa fix.
+
+Titta också i debugpanelen med fem tryck på Profil. Det mest värdefulla just nu är vad det står vid:
+
+* inloggad
+* token finns
+* senaste HTTP-status
+* Authorization-header skickad

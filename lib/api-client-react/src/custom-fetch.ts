@@ -6,7 +6,10 @@ export type ErrorType<T = unknown> = ApiError<T>;
 
 export type BodyType<T> = T;
 
-export type AuthTokenGetter = () => Promise<string | null> | string | null;
+export type AuthTokenGetter = (opts?: {
+  /** Request a freshly minted token, bypassing any client-side cache. */
+  fresh?: boolean;
+}) => Promise<string | null> | string | null;
 
 const NO_BODY_STATUS = new Set([204, 205, 304]);
 const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
@@ -376,8 +379,31 @@ export async function customFetch<T = unknown>(
   const requestInfo = { method, url: resolveUrl(input) };
 
   _lastAuthHeaderSent = headers.has("authorization");
-  const response = await fetch(input, { ...init, method, headers });
+  let response = await fetch(input, { ...init, method, headers });
   _lastHttpStatus = response.status;
+
+  // On 401 with an attached token: fetch a fresh token (bypassing cache) and
+  // retry once. This absorbs expired/stale cached tokens without bouncing a
+  // signed-in user to the login screen. Requests built from a Request object
+  // are not retried (their body may already be consumed).
+  if (
+    response.status === 401 &&
+    _authTokenGetter &&
+    headers.has("authorization") &&
+    !isRequest(input)
+  ) {
+    let freshToken: string | null = null;
+    try {
+      freshToken = await _authTokenGetter({ fresh: true });
+    } catch {
+      freshToken = null;
+    }
+    if (freshToken) {
+      headers.set("authorization", `Bearer ${freshToken}`);
+      response = await fetch(input, { ...init, method, headers });
+      _lastHttpStatus = response.status;
+    }
+  }
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);

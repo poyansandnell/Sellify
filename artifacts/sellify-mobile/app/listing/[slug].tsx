@@ -29,7 +29,7 @@ import {
 import { useColors } from '@/hooks/useColors';
 import { conditionLabel, useI18n } from '@/lib/i18n';
 import { formatPrice, imageUrl, listingUrl } from '@/lib/utils';
-import { errorDetail, errorStatus } from '@/lib/apiError';
+import { authFailureDebug, errorDetail, errorStatus } from '@/lib/apiError';
 import { ListingCard } from '@/components/ListingCard';
 import {
   EmptyState,
@@ -46,7 +46,7 @@ export default function ListingDetailScreen() {
   const router = useRouter();
   const { t, language } = useI18n();
   const { width } = useWindowDimensions();
-  const { isSignedIn, userId } = useAuth();
+  const { isSignedIn, userId, getToken } = useAuth();
   const queryClient = useQueryClient();
 
   const {
@@ -123,8 +123,23 @@ export default function ListingDetailScreen() {
       router.push(`/conversation/${conv.id}`);
     } catch (e) {
       if (errorStatus(e) === 401) {
-        Alert.alert(t.sessionExpired);
-        router.push('/sign-in');
+        // Only bounce to login when Clerk actually reports signed out —
+        // the API client has already retried once with a fresh token.
+        if (!isSignedIn) {
+          Alert.alert(t.sessionExpired);
+          router.push('/sign-in');
+          return;
+        }
+        let hasToken = false;
+        try {
+          hasToken = Boolean(await getToken());
+        } catch {
+          hasToken = false;
+        }
+        Alert.alert(
+          t.error,
+          `${errorDetail(t.sendMessage, e)}\n\n${authFailureDebug(isSignedIn, hasToken, e)}`,
+        );
         return;
       }
       Alert.alert(t.error, errorDetail(t.sendMessage, e));

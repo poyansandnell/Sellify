@@ -10,7 +10,7 @@
 
 // Bump this tag whenever auth wiring changes so the in-app debug panel can
 // prove which configuration a given TestFlight build actually contains.
-export const BUILD_TAG = 'auth-v2-derived-proxy';
+export const BUILD_TAG = 'auth-v3-prod-key-guard';
 
 const CLERK_PROXY_PATH = '/api/__clerk';
 const domainForClerk = process.env.EXPO_PUBLIC_DOMAIN || '';
@@ -24,11 +24,21 @@ function derivedPublishableKey(host: string): string {
 
 const envPubKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY || '';
 
-// A pk_test_ (development-instance) key must be used as-is and without a
-// proxy; otherwise fall back to the production key derived from the domain.
-export const clerkPubKey = envPubKey.startsWith('pk_test_')
-  ? envPubKey
-  : envPubKey || derivedPublishableKey(domainForClerk);
+// Whether this is a development bundle (Expo dev server). Release/TestFlight
+// builds have __DEV__ === false.
+const isDevBuild = typeof __DEV__ !== 'undefined' && __DEV__;
+
+// A pk_test_ (development-instance) key is only honored in development
+// bundles. Release builds MUST use the production instance: tokens issued by
+// the dev instance are rejected by the production API with 401 even though
+// sign-in appears to work. (Build 7 root cause: a pk_test key from EAS env
+// leaked into the release binary.)
+export const clerkPubKey =
+  envPubKey.startsWith('pk_test_')
+    ? isDevBuild
+      ? envPubKey
+      : derivedPublishableKey(domainForClerk)
+    : envPubKey || derivedPublishableKey(domainForClerk);
 
 export const clerkProxyUrl = clerkPubKey.startsWith('pk_test_')
   ? undefined
