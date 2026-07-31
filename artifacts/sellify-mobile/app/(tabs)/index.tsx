@@ -62,6 +62,7 @@ function StartupDiagnostics({ onClose }: { onClose: () => void }) {
     `clerk-proxy: ${clerkProxyUrl ?? 'ingen'}`,
     `konfig-fel: ${clerkConfigError ?? 'inget'}`,
     `första JS-fel: ${startupDiag.firstError ?? 'inget'}`,
+    `fel från FÖRRA starten: ${startupDiag.previousError ?? 'inget'}`,
     `första API-anrop: ${startupDiag.firstRequest ?? 'INGET ännu'}`,
     `start: ${startupDiag.startedAt}`,
     '— livscykel —',
