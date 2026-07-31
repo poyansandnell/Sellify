@@ -1,4 +1,7 @@
-import React, { useEffect } from 'react';
+// Must be the very first import so the global error handler is installed
+// before any other app module can throw during bundle evaluation.
+import '@/lib/startupDiag';
+import React, { useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
@@ -84,13 +87,23 @@ export default function RootLayout() {
     Inter_700Bold,
   });
 
+  // Never let font loading block the app forever: if fonts have not resolved
+  // after 5 seconds, render anyway with system fonts.
+  const [fontTimedOut, setFontTimedOut] = useState(false);
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    const id = setTimeout(() => setFontTimedOut(true), 5000);
+    return () => clearTimeout(id);
+  }, []);
+
+  const ready = fontsLoaded || Boolean(fontError) || fontTimedOut;
+
+  useEffect(() => {
+    if (ready) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError]);
+  }, [ready]);
 
-  if (!fontsLoaded && !fontError) return null;
+  if (!ready) return null;
 
   return (
     <SafeAreaProvider>

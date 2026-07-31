@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Platform,
   Pressable,
@@ -18,8 +18,86 @@ import { useI18n } from '@/lib/i18n';
 import { ListingCard, ListingCardSkeleton } from '@/components/ListingCard';
 import { EmptyState } from '@/components/Ui';
 import colorsConst from '@/constants/colors';
+import { useAuth } from '@clerk/clerk-expo';
+import {
+  apiBaseUrl,
+  BUILD_TAG,
+  clerkConfigError,
+  clerkProxyUrl,
+  clerkPubKey,
+} from '@/lib/clerkConfig';
+import { startupDiag } from '@/lib/startupDiag';
+
+// Temporary startup diagnostics (tap the "Sellify" heading 5 times).
+// Works WITHOUT signing in — shows build tag, API base, Clerk status and a
+// live probe of the public listings endpoint. Removal tracked with the
+// profile-screen debug panel.
+function StartupDiagnostics({ onClose }: { onClose: () => void }) {
+  const { isLoaded, isSignedIn } = useAuth();
+  const [probe, setProbe] = useState<string>('testar…');
+
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${apiBaseUrl}/api/listings`);
+        if (!cancelled) setProbe(`HTTP ${res.status}`);
+      } catch (e) {
+        if (!cancelled)
+          setProbe(`FEL: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const rows = [
+    `build: ${BUILD_TAG}`,
+    `api-bas: ${apiBaseUrl}`,
+    `GET /api/listings: ${probe}`,
+    `clerk laddad: ${isLoaded ? 'ja' : 'nej'}`,
+    `clerk inloggad: ${isSignedIn ? 'ja' : 'nej'}`,
+    `clerk-nyckel: ${clerkPubKey ? clerkPubKey.slice(0, 16) + '…' : 'SAKNAS'}`,
+    `clerk-proxy: ${clerkProxyUrl ?? 'ingen'}`,
+    `konfig-fel: ${clerkConfigError ?? 'inget'}`,
+    `första JS-fel: ${startupDiag.firstError ?? 'inget'}`,
+    `start: ${startupDiag.startedAt}`,
+  ].join('\n');
+
+  return (
+    <View style={diagStyles.overlay}>
+      <Text style={diagStyles.title}>Startdiagnostik</Text>
+      <Text selectable style={diagStyles.mono}>
+        {rows}
+      </Text>
+      <Pressable onPress={onClose} style={diagStyles.close}>
+        <Text style={diagStyles.closeText}>Stäng</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+const diagStyles = StyleSheet.create({
+  overlay: {
+    position: 'absolute',
+    top: 80,
+    left: 16,
+    right: 16,
+    zIndex: 100,
+    backgroundColor: 'rgba(15,23,42,0.96)',
+    borderRadius: 12,
+    padding: 16,
+  },
+  title: { color: '#fff', fontWeight: '700', fontSize: 15, marginBottom: 8 },
+  mono: { color: '#d1fae5', fontSize: 12, lineHeight: 18 },
+  close: { marginTop: 12, alignSelf: 'flex-end' },
+  closeText: { color: '#93c5fd', fontWeight: '600' },
+});
 
 export default function HomeScreen() {
+  const [diagTaps, setDiagTaps] = useState(0);
+  const [showDiag, setShowDiag] = useState(false);
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -44,7 +122,20 @@ export default function HomeScreen() {
         }
       >
         <View style={styles.header}>
-          <Text style={[styles.brand, { color: colors.primary }]}>Sellify</Text>
+          <Pressable
+            onPress={() => {
+              const n = diagTaps + 1;
+              setDiagTaps(n);
+              if (n >= 5) {
+                setDiagTaps(0);
+                setShowDiag(true);
+              }
+            }}
+          >
+            <Text style={[styles.brand, { color: colors.primary }]}>
+              Sellify
+            </Text>
+          </Pressable>
           <Pressable
             testID="search-bar"
             onPress={() => router.push('/search')}
@@ -140,6 +231,9 @@ export default function HomeScreen() {
           </>
         ) : null}
       </ScrollView>
+      {showDiag ? (
+        <StartupDiagnostics onClose={() => setShowDiag(false)} />
+      ) : null}
     </View>
   );
 }

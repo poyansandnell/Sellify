@@ -15,11 +15,44 @@ export const BUILD_TAG = 'auth-v3-prod-key-guard';
 const CLERK_PROXY_PATH = '/api/__clerk';
 const domainForClerk = process.env.EXPO_PUBLIC_DOMAIN || '';
 
+// If anything goes wrong while computing the Clerk config, the error text is
+// stored here (shown in the startup diagnostics overlay) instead of crashing
+// the whole app at bundle-evaluation time.
+export let clerkConfigError: string | null = null;
+
+// Pure-JS base64 so key derivation never depends on a global `btoa`
+// (availability varies across React Native runtimes; a missing global here
+// would crash the app before the first screen renders).
+const B64_ALPHABET =
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+function base64Encode(input: string): string {
+  let out = '';
+  for (let i = 0; i < input.length; i += 3) {
+    const c1 = input.charCodeAt(i);
+    const c2 = i + 1 < input.length ? input.charCodeAt(i + 1) : NaN;
+    const c3 = i + 2 < input.length ? input.charCodeAt(i + 2) : NaN;
+    out += B64_ALPHABET.charAt(c1 >> 2);
+    out += B64_ALPHABET.charAt(((c1 & 3) << 4) | (Number.isNaN(c2) ? 0 : c2 >> 4));
+    out += Number.isNaN(c2)
+      ? '='
+      : B64_ALPHABET.charAt(((c2 & 15) << 2) | (Number.isNaN(c3) ? 0 : c3 >> 6));
+    out += Number.isNaN(c3) ? '=' : B64_ALPHABET.charAt(c3 & 63);
+  }
+  return out;
+}
+
 function derivedPublishableKey(host: string): string {
-  if (!host) return '';
-  const frontendApi = `clerk.${host.toLowerCase().replace(/:\d+$/, '')}`;
-  // btoa is available in React Native (Hermes) and on web.
-  return `pk_live_${btoa(`${frontendApi}$`).replace(/=+$/, '')}`;
+  try {
+    if (!host) {
+      clerkConfigError = 'EXPO_PUBLIC_DOMAIN saknas – kan inte härleda Clerk-nyckel';
+      return '';
+    }
+    const frontendApi = `clerk.${host.toLowerCase().replace(/:\d+$/, '')}`;
+    return `pk_live_${base64Encode(`${frontendApi}$`).replace(/=+$/, '')}`;
+  } catch (e) {
+    clerkConfigError = e instanceof Error ? e.message : String(e);
+    return '';
+  }
 }
 
 const envPubKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY || '';

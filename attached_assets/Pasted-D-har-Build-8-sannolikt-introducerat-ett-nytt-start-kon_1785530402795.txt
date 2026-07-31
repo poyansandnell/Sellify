@@ -1,0 +1,55 @@
+Då har Build 8 sannolikt introducerat ett nytt start-/konfigurationsfel. Eftersom även publika annonser försvunnit är problemet större än bara Clerk-inloggningen. Publika annonser ska kunna laddas utan session.
+
+Bygg inte Build 9 ännu. Be Replit läsa loggarna och återställa fungerande delar först.
+
+Skicka detta:
+
+STOPP – Build 8 har gjort appen sämre
+
+I TestFlight Build 8 går det nu:
+
+* inte att logga in,
+* inte att se några annonser,
+* och därmed inte heller att testa meddelanden eller publicering.
+
+Build 7 kunde åtminstone visa publika annonser och öppna inloggningssidan. Build 8 har alltså introducerat ett nytt fel som påverkar både publika API-anrop och Clerk.
+
+Bygg inte en ny version innan ni har identifierat den exakta orsaken.
+
+Kontrollera omedelbart produktionsloggarna från mitt senaste Build 8-test:
+
+1. Gör appen några anrop över huvud taget när den startar?
+2. Vilken exakt URL används för publika annonser?
+3. Når GET /api/listings servern?
+4. Vilken statuskod får GET /api/listings?
+5. Startar Clerk-proxyn via /api/__clerk?
+6. Ger den härledda pk_live_-nyckeln en giltig Clerk-konfiguration?
+7. Är den härledda nyckeln verkligen en riktig Clerk Production Publishable Key, eller bara en syntetiskt genererad sträng som Clerk inte accepterar?
+8. Kontrollera om publishableKeyFromHost verkligen får användas som klientnyckel i en fristående Expo-app.
+9. Kontrollera om proxyUrl kräver ytterligare konfiguration och om ClerkProvider kraschar eller fastnar vid initiering.
+10. Kontrollera om ändringen i _layout.tsx råkade stoppa setBaseUrl() eller appens initiering innan publika API-anrop körs.
+
+Lägg till en enkel startdiagnostik som visas även utan inloggning:
+
+* Buildmarkör
+* API-bas-URL
+* GET /api/listings status
+* Clerk laddad: ja/nej
+* Clerk-feltext
+* Proxy-URL
+
+Viktigt:
+
+* Återställ publika annonser först.
+* Publika GET /api/listings får aldrig bero på Clerk.
+* Clerk-initiering får inte blockera hela appens rendering.
+* Om Clerk inte kan starta ska appen ändå visa publika annonser och ett begripligt inloggningsfel.
+* Använd en riktig pk_live_ från Clerk Production Dashboard om Clerk kräver det. Hitta inte på eller härled en nyckel om den inte uttryckligen är giltig enligt Clerk.
+* Jämför exakt ändringarna mellan Build 7 och Build 8.
+* Redovisa den första exceptionen eller HTTP-statusen från Build 8 innan ni pushar en fix.
+
+Om den härledda nyckeln är grundproblemet: återställ till Build 7:s fungerande publika flöde och konfigurera istället en riktig Clerk Production-instans med dess officiella pk_live_-nyckel i EAS Production.
+
+Min starkaste misstanke nu är att den “härledda” pk_live_-nyckeln inte fungerar som en riktig fristående Clerk-nyckel i Expo-appen, eller att ClerkProvider blockerar hela root-layouten. Att publika annonser också försvinner tyder på att appens uppstart fastnar innan resten av gränssnittet och API-klienten hinner initieras.
+
+Ta gärna en skärmbild från debugpanelen om den fortfarande går att öppna. Det viktigaste är vad den visar för API-bas, Clerk-status och nyckelprefix.
