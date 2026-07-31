@@ -26,7 +26,7 @@ import {
   clerkProxyUrl,
   clerkPubKey,
 } from '@/lib/clerkConfig';
-import { startupDiag } from '@/lib/startupDiag';
+import { mark, startupDiag } from '@/lib/startupDiag';
 
 // Temporary startup diagnostics (tap the "Sellify" heading 5 times).
 // Works WITHOUT signing in — shows build tag, API base, Clerk status and a
@@ -55,14 +55,19 @@ function StartupDiagnostics({ onClose }: { onClose: () => void }) {
   const rows = [
     `build: ${BUILD_TAG}`,
     `api-bas: ${apiBaseUrl}`,
-    `GET /api/listings: ${probe}`,
+    `GET /api/listings (live-test): ${probe}`,
     `clerk laddad: ${isLoaded ? 'ja' : 'nej'}`,
     `clerk inloggad: ${isSignedIn ? 'ja' : 'nej'}`,
     `clerk-nyckel: ${clerkPubKey ? clerkPubKey.slice(0, 16) + '…' : 'SAKNAS'}`,
     `clerk-proxy: ${clerkProxyUrl ?? 'ingen'}`,
     `konfig-fel: ${clerkConfigError ?? 'inget'}`,
     `första JS-fel: ${startupDiag.firstError ?? 'inget'}`,
+    `första API-anrop: ${startupDiag.firstRequest ?? 'INGET ännu'}`,
     `start: ${startupDiag.startedAt}`,
+    '— livscykel —',
+    ...(startupDiag.checkpoints.length
+      ? startupDiag.checkpoints
+      : ['(inga checkpoints nådda)']),
   ].join('\n');
 
   return (
@@ -98,6 +103,9 @@ const diagStyles = StyleSheet.create({
 export default function HomeScreen() {
   const [diagTaps, setDiagTaps] = useState(0);
   const [showDiag, setShowDiag] = useState(false);
+  React.useEffect(() => {
+    mark('home-renderad');
+  }, []);
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();

@@ -5,10 +5,26 @@
 export const startupDiag: {
   firstError: string | null;
   startedAt: string;
+  /** Lifecycle checkpoints in the order they were reached: "name @ ISO-time". */
+  checkpoints: string[];
+  /** First API request started via customFetch: "METHOD url @ ISO-time". */
+  firstRequest: string | null;
 } = {
   firstError: null,
   startedAt: new Date().toISOString(),
+  checkpoints: [],
+  firstRequest: null,
 };
+
+/** Record a lifecycle checkpoint (deduplicated by name). */
+export function mark(name: string): void {
+  if (startupDiag.checkpoints.some((c) => c.startsWith(`${name} `))) return;
+  try {
+    startupDiag.checkpoints.push(`${name} @ ${new Date().toISOString()}`);
+  } catch {
+    startupDiag.checkpoints.push(name);
+  }
+}
 
 type GlobalWithErrorUtils = typeof globalThis & {
   ErrorUtils?: {

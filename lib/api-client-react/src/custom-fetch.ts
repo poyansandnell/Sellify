@@ -37,6 +37,20 @@ export function getLastAuthHeaderSent(): boolean {
 }
 
 /**
+ * Diagnostics: observer invoked with the resolved URL of every request made
+ * through `customFetch`, BEFORE the network call is attempted. Lets an app
+ * prove whether any API request was ever started (e.g. startup debugging).
+ * Pass `null` to clear. Observer errors are swallowed.
+ */
+let _requestObserver: ((url: string, method: string) => void) | null = null;
+
+export function setRequestObserver(
+  observer: ((url: string, method: string) => void) | null,
+): void {
+  _requestObserver = observer;
+}
+
+/**
  * Set a base URL that is prepended to every relative request URL
  * (i.e. paths that start with `/`).
  *
@@ -377,6 +391,14 @@ export async function customFetch<T = unknown>(
   }
 
   const requestInfo = { method, url: resolveUrl(input) };
+
+  if (_requestObserver) {
+    try {
+      _requestObserver(requestInfo.url, method);
+    } catch {
+      // Diagnostics must never break requests.
+    }
+  }
 
   _lastAuthHeaderSent = headers.has("authorization");
   let response = await fetch(input, { ...init, method, headers });

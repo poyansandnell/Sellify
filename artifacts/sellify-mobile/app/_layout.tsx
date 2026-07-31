@@ -1,6 +1,6 @@
 // Must be the very first import so the global error handler is installed
 // before any other app module can throw during bundle evaluation.
-import '@/lib/startupDiag';
+import { mark, startupDiag } from '@/lib/startupDiag';
 import React, { useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -21,10 +21,18 @@ import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import {
   setAuthTokenGetter,
   setBaseUrl,
+  setRequestObserver,
 } from '@workspace/api-client-react';
 import { I18nProvider, useI18n } from '@/lib/i18n';
 
+mark('layout-module-eval');
 setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
+setRequestObserver((url, method) => {
+  if (!startupDiag.firstRequest) {
+    startupDiag.firstRequest = `${method} ${url} @ ${new Date().toISOString()}`;
+  }
+});
+mark('custom-fetch-initierad');
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -35,7 +43,13 @@ import { clerkPubKey, clerkProxyUrl } from '@/lib/clerkConfig';
 import { tokenCache } from '@/lib/clerkSession';
 
 function AuthTokenBridge() {
+  // This component renders inside ClerkProvider and calls useAuth() — if it
+  // mounts, ClerkProvider initialized without throwing.
   const { getToken } = useAuth();
+  useEffect(() => {
+    mark('clerk-provider-initierad');
+    mark('auth-getter-registrerad');
+  }, []);
   useEffect(() => {
     setAuthTokenGetter(async (opts) => {
       try {
