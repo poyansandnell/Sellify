@@ -53,14 +53,25 @@ function AuthTokenBridge() {
   useEffect(() => {
     setAuthTokenGetter(async (opts) => {
       try {
-        const token = await getToken(
-          opts?.fresh ? { skipCache: true } : undefined,
-        );
+        // HARD TIMEOUT: if Clerk's getToken() hangs (e.g. Clerk init stuck),
+        // give up after 3s and send the request WITHOUT a token. Public
+        // endpoints (listings, home feed) must never be blocked by Clerk —
+        // a hung token fetch here silently freezes every API call in the app.
+        const token = await Promise.race([
+          getToken(opts?.fresh ? { skipCache: true } : undefined),
+          new Promise<null>((resolve) =>
+            setTimeout(() => {
+              mark('getToken-TIMEOUT-3s');
+              resolve(null);
+            }, 3000),
+          ),
+        ]);
         if (!token) {
           console.warn('[auth] getToken() returned null — request will be sent unauthenticated');
         }
         return token ?? null;
       } catch (e) {
+        mark('getToken-KASTADE-FEL');
         console.warn('[auth] getToken() threw:', e instanceof Error ? e.message : String(e));
         return null;
       }
