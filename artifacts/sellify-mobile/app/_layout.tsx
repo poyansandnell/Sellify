@@ -57,15 +57,16 @@ function AuthTokenBridge() {
         // give up after 3s and send the request WITHOUT a token. Public
         // endpoints (listings, home feed) must never be blocked by Clerk —
         // a hung token fetch here silently freezes every API call in the app.
+        let timer: ReturnType<typeof setTimeout> | undefined;
         const token = await Promise.race([
           getToken(opts?.fresh ? { skipCache: true } : undefined),
-          new Promise<null>((resolve) =>
-            setTimeout(() => {
+          new Promise<null>((resolve) => {
+            timer = setTimeout(() => {
               mark('getToken-TIMEOUT-3s');
               resolve(null);
-            }, 3000),
-          ),
-        ]);
+            }, 3000);
+          }),
+        ]).finally(() => clearTimeout(timer));
         if (!token) {
           console.warn('[auth] getToken() returned null — request will be sent unauthenticated');
         }
