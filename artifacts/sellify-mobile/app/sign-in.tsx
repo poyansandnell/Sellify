@@ -43,6 +43,9 @@ export default function SignInScreen() {
   const clerk = useClerk();
 
   const [mode, setMode] = useState<Mode>('sign-in');
+  // Which flow the verify screen belongs to: sign-up email verification or
+  // Client Trust email code during password sign-in on a new device.
+  const [verifyContext, setVerifyContext] = useState<'sign-up' | 'sign-in'>('sign-up');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
@@ -129,9 +132,48 @@ export default function SignInScreen() {
       done();
       return null;
     }
-    // MFA or other extra steps are not enabled for this app — anything other
-    // than 'complete' is unexpected, so surface it instead of failing silently.
+    if (signIn.status === 'needs_client_trust') {
+      // Clerk Client Trust: password sign-in from a new device requires an
+      // email code. Send it and show the verify screen.
+      const { error: sendError } = await signIn.mfa.sendEmailCode();
+      if (sendError) return sendError;
+      setCode('');
+      setVerifyContext('sign-in');
+      setMode('verify');
+      return null;
+    }
+    // Other extra steps (e.g. MFA) are not enabled for this app — anything
+    // else is unexpected, so surface it instead of failing silently.
     return { message: `${t.error} (status: ${signIn.status})` } as ClerkError;
+  };
+
+  const onVerifySignIn = async () => {
+    if (!signIn) return;
+    setError('');
+    setBusy(true);
+    try {
+      const { error: verifyError } = await signIn.mfa.verifyEmailCode({
+        code: code.trim(),
+      });
+      if (verifyError) {
+        setError(errText(verifyError));
+        return;
+      }
+      if (signIn.status === 'complete') {
+        const { error: finalizeError } = await signIn.finalize();
+        if (finalizeError) {
+          setError(errText(finalizeError));
+          return;
+        }
+        done();
+      } else {
+        setError(`${t.error} (status: ${signIn.status})`);
+      }
+    } catch (e: any) {
+      setError(errText(e));
+    } finally {
+      setBusy(false);
+    }
   };
 
   const onSignIn = async () => {
@@ -181,6 +223,8 @@ export default function SignInScreen() {
         setError(errText(sendError));
         return;
       }
+      setCode('');
+      setVerifyContext('sign-up');
       setMode('verify');
     } catch (e: any) {
       setError(errText(e));
@@ -424,7 +468,7 @@ export default function SignInScreen() {
               testID="verify-button"
               label={t.verify}
               loading={busy}
-              onPress={onVerify}
+              onPress={verifyContext === 'sign-in' ? onVerifySignIn : onVerify}
             />
           </>
         )}

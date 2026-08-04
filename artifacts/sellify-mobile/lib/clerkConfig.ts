@@ -10,7 +10,7 @@
 
 // Bump this tag whenever auth wiring changes so the in-app debug panel can
 // prove which configuration a given TestFlight build actually contains.
-export const BUILD_TAG = 'auth-v4-clerk-expo-v3-proxy';
+export const BUILD_TAG = 'auth-v5-client-trust';
 
 const CLERK_PROXY_PATH = '/api/__clerk';
 const domainForClerk = process.env.EXPO_PUBLIC_DOMAIN || '';
