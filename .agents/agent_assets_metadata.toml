@@ -53,50 +53,50 @@ title = "iPhone – Search (EN)"
 id = "6EaqUkphzRC1FZ_QDdQQD"
 uri = "file://screenshots/appstore/sellify-appstore-bilder.zip"
 type = "unspecified"
-title = "Alla App Store-bilder (ZIP)"
-description = "Alla 12 bilder – iPhone 6,7\" (1290×2796) och iPad 13\" (2048×2732), svenska och engelska."
+title = "Alla App Store-bilder (ZIP, uppdaterad)"
+description = "Alla 12 bilder – iPhone 1284×2778 och iPad 2048×2732, svenska och engelska."
 
 [[outputs]]
 id = "Mpdmft0A21TjmGmZ-s2Zb"
 uri = "file://screenshots/appstore/iphone-sv-1-hem.jpg"
 type = "image"
-title = "iPhone SV 1 – Hem"
-description = "Fynda second hand i hela Sverige (1290×2796)"
+title = "iPhone SV 1 – Hem (1284×2778)"
+description = "Fynda second hand i hela Sverige"
 
 [[outputs]]
 id = "GG3M64EHw36bOSCMsYad0"
 uri = "file://screenshots/appstore/iphone-sv-2-ai.jpg"
 type = "image"
-title = "iPhone SV 2 – Sälj med AI"
-description = "Fota. Klart. AI:n skriver annonsen. (1290×2796)"
+title = "iPhone SV 2 – Sälj med AI (1284×2778)"
+description = "Fota. Klart. AI:n skriver annonsen."
 
 [[outputs]]
 id = "G-q4bNs0oZwIwGBgd9m3L"
 uri = "file://screenshots/appstore/iphone-sv-3-annons.jpg"
 type = "image"
-title = "iPhone SV 3 – Annons"
-description = "Sälj snabbare med proffsiga annonser (1290×2796)"
+title = "iPhone SV 3 – Annons (1284×2778)"
+description = "Sälj snabbare med proffsiga annonser"
 
 [[outputs]]
 id = "geVl3OUxAH1J4MXn93lMR"
 uri = "file://screenshots/appstore/iphone-en-1-home.jpg"
 type = "image"
-title = "iPhone EN 1 – Home"
-description = "Discover second-hand treasures (1290×2796)"
+title = "iPhone EN 1 – Home (1284×2778)"
+description = "Discover second-hand treasures"
 
 [[outputs]]
 id = "A5fnKe5zJ6btDG5__Am0y"
 uri = "file://screenshots/appstore/iphone-en-2-ai.jpg"
 type = "image"
-title = "iPhone EN 2 – Sell with AI"
-description = "Snap a photo. AI writes your listing. (1290×2796)"
+title = "iPhone EN 2 – Sell with AI (1284×2778)"
+description = "Snap a photo. AI writes your listing."
 
 [[outputs]]
 id = "7hnfsPcxyqEXdJnm_aKls"
 uri = "file://screenshots/appstore/iphone-en-3-listing.jpg"
 type = "image"
-title = "iPhone EN 3 – Listing"
-description = "Sell faster with pro-quality listings (1290×2796)"
+title = "iPhone EN 3 – Listing (1284×2778)"
+description = "Sell faster with pro-quality listings"
 
 [[outputs]]
 id = "JvNSzRIXwr0GW4KsQd47U"
