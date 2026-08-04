@@ -14,8 +14,11 @@ import { Feather, FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
-import { useClerk, useSSO } from '@clerk/clerk-expo';
-import { useSignIn, useSignUp } from '@clerk/clerk-expo';
+import { useClerk, useSSO } from '@clerk/expo';
+import { useSignIn, useSignUp } from '@clerk/expo';
+
+// Minimal local shape for errors returned by Clerk Core v3 Future methods.
+type ClerkError = { code?: string; message?: string; longMessage?: string };
 import { clearClerkTokenCache } from '@/lib/clerkSession';
 import { useColors } from '@/hooks/useColors';
 import { useI18n } from '@/lib/i18n';
@@ -32,8 +35,10 @@ export default function SignInScreen() {
   const router = useRouter();
   const { t } = useI18n();
 
-  const { signIn, setActive: setActiveSignIn, isLoaded: signInLoaded } = useSignIn();
-  const { signUp, setActive: setActiveSignUp, isLoaded: signUpLoaded } = useSignUp();
+  // Clerk Core v3: hooks return Future resources whose methods resolve with
+  // { error } instead of throwing, and a session is activated via finalize().
+  const { signIn } = useSignIn();
+  const { signUp } = useSignUp();
   const { startSSOFlow } = useSSO();
   const clerk = useClerk();
 
@@ -51,7 +56,11 @@ export default function SignInScreen() {
   }, [router]);
 
   const isSessionExists = (e: any) =>
-    e?.errors?.some?.((err: any) => err?.code === 'session_exists') ?? false;
+    e?.code === 'session_exists' ||
+    (e?.errors?.some?.((err: any) => err?.code === 'session_exists') ?? false);
+
+  const errText = (e: ClerkError | any) =>
+    e?.longMessage ?? e?.message ?? e?.errors?.[0]?.message ?? t.error;
 
   /** Fully reset the local Clerk session: sign out + wipe SecureStore cache. */
   const resetLocalSession = useCallback(async () => {
@@ -107,79 +116,103 @@ export default function SignInScreen() {
     }
   };
 
-  const attemptEmailSignIn = async () => {
-    const attempt = await signIn!.create({
+  const attemptEmailSignIn = async (): Promise<ClerkError | null> => {
+    const { error } = await signIn.password({
       identifier: email.trim(),
       password,
     });
-    if (attempt.status === 'complete') {
-      await setActiveSignIn?.({ session: attempt.createdSessionId });
+    if (error) return error;
+    if (signIn.status === 'complete') {
+      const { error: finalizeError } = await signIn.finalize();
+      if (finalizeError) return finalizeError;
+      setShowClearSession(false);
       done();
+      return null;
     }
+    // MFA or other extra steps are not enabled for this app — anything other
+    // than 'complete' is unexpected, so surface it instead of failing silently.
+    return { message: `${t.error} (status: ${signIn.status})` } as ClerkError;
   };
 
   const onSignIn = async () => {
-    if (!signInLoaded || !signIn) return;
+    if (!signIn) return;
     setError('');
     setBusy(true);
     try {
-      await attemptEmailSignIn();
-    } catch (e: any) {
-      if (isSessionExists(e)) {
+      let err = await attemptEmailSignIn();
+      if (err && isSessionExists(err)) {
         // A stale session from an earlier build blocks new sign-ins.
         // Clear it and retry once automatically.
-        try {
-          await resetLocalSession();
-          await attemptEmailSignIn();
-        } catch (e2: any) {
-          setError(e2?.errors?.[0]?.message ?? t.error);
-          setShowClearSession(true);
-        }
-      } else {
-        setError(e?.errors?.[0]?.message ?? t.error);
+        await resetLocalSession();
+        err = await attemptEmailSignIn();
+        if (err) setShowClearSession(true);
       }
+      if (err) setError(errText(err));
+    } catch (e: any) {
+      setError(errText(e));
     } finally {
       setBusy(false);
     }
   };
 
   const onSignUp = async () => {
-    if (!signUpLoaded || !signUp) return;
+    if (!signUp) return;
     setError('');
     setBusy(true);
     try {
       if (clerk.session) {
         await resetLocalSession();
       }
-      await signUp.create({ emailAddress: email.trim(), password });
-      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+      const { error: createError } = await signUp.password({
+        emailAddress: email.trim(),
+        password,
+      });
+      if (createError) {
+        if (isSessionExists(createError)) {
+          await resetLocalSession();
+          setError(t.sessionCleared);
+        } else {
+          setError(errText(createError));
+        }
+        return;
+      }
+      const { error: sendError } = await signUp.verifications.sendEmailCode();
+      if (sendError) {
+        setError(errText(sendError));
+        return;
+      }
       setMode('verify');
     } catch (e: any) {
-      if (isSessionExists(e)) {
-        await resetLocalSession();
-        setError(t.sessionCleared);
-      } else {
-        setError(e?.errors?.[0]?.message ?? t.error);
-      }
+      setError(errText(e));
     } finally {
       setBusy(false);
     }
   };
 
   const onVerify = async () => {
-    if (!signUpLoaded || !signUp) return;
+    if (!signUp) return;
     setError('');
     setBusy(true);
     try {
-      const attempt = await signUp.attemptEmailAddressVerification({
+      const { error: verifyError } = await signUp.verifications.verifyEmailCode({
         code: code.trim(),
       });
-      if (attempt.status === 'complete') {
-        await setActiveSignUp({ session: attempt.createdSessionId });
+      if (verifyError) {
+        setError(errText(verifyError));
+        return;
+      }
+      if (signUp.status === 'complete') {
+        const { error: finalizeError } = await signUp.finalize();
+        if (finalizeError) {
+          setError(errText(finalizeError));
+          return;
+        }
         done();
+      } else {
+        setError(`${t.error} (status: ${signUp.status})`);
       }
     } catch (e: any) {
-      setError(e?.errors?.[0]?.message ?? t.error);
+      setError(errText(e));
     } finally {
       setBusy(false);
     }

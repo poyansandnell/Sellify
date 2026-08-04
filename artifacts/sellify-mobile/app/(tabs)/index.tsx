@@ -18,7 +18,7 @@ import { useI18n } from '@/lib/i18n';
 import { ListingCard, ListingCardSkeleton } from '@/components/ListingCard';
 import { EmptyState } from '@/components/Ui';
 import colorsConst from '@/constants/colors';
-import { useAuth } from '@clerk/clerk-expo';
+import { useAuth } from '@clerk/expo';
 import {
   apiBaseUrl,
   BUILD_TAG,
