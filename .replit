@@ -37,3 +37,8 @@ externalPort = 80
 [[ports]]
 localPort = 25942
 externalPort = 3000
+
+[userenv]
+
+[userenv.production]
+REVIEW_USER_EMAIL = "apple-review@sellify.app"
