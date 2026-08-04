@@ -294,6 +294,14 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>('sv');
 
   useEffect(() => {
+    // Web only: allow forcing language via ?lang= (used for screenshots/demos)
+    if (typeof window !== 'undefined' && typeof window.location !== 'undefined') {
+      const forced = new URLSearchParams(window.location.search).get('lang');
+      if (forced === 'sv' || forced === 'en') {
+        setLanguageState(forced);
+        return;
+      }
+    }
     AsyncStorage.getItem('sellify-lang').then((saved) => {
       if (saved === 'sv' || saved === 'en') setLanguageState(saved);
     });
