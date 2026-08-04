@@ -295,12 +295,20 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Web only: allow forcing language via ?lang= (used for screenshots/demos)
-    if (typeof window !== 'undefined' && typeof window.location !== 'undefined') {
-      const forced = new URLSearchParams(window.location.search).get('lang');
-      if (forced === 'sv' || forced === 'en') {
-        setLanguageState(forced);
-        return;
+    try {
+      if (
+        typeof window !== 'undefined' &&
+        typeof window.location !== 'undefined' &&
+        typeof URLSearchParams === 'function'
+      ) {
+        const forced = new URLSearchParams(window.location.search).get('lang');
+        if (forced === 'sv' || forced === 'en') {
+          setLanguageState(forced);
+          return;
+        }
       }
+    } catch {
+      // Ignore and fall back to stored language
     }
     AsyncStorage.getItem('sellify-lang').then((saved) => {
       if (saved === 'sv' || saved === 'en') setLanguageState(saved);
