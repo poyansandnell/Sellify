@@ -48,3 +48,94 @@ id = "2UypVyc3lm3PwQyslaKH8"
 uri = "file://attached_assets/store/out/iphone-03-en.png"
 type = "image"
 title = "iPhone – Search (EN)"
+
+[[outputs]]
+id = "6EaqUkphzRC1FZ_QDdQQD"
+uri = "file://screenshots/appstore/sellify-appstore-bilder.zip"
+type = "unspecified"
+title = "Alla App Store-bilder (ZIP)"
+description = "Alla 12 bilder – iPhone 6,7\" (1290×2796) och iPad 13\" (2048×2732), svenska och engelska."
+
+[[outputs]]
+id = "Mpdmft0A21TjmGmZ-s2Zb"
+uri = "file://screenshots/appstore/iphone-sv-1-hem.jpg"
+type = "image"
+title = "iPhone SV 1 – Hem"
+description = "Fynda second hand i hela Sverige (1290×2796)"
+
+[[outputs]]
+id = "GG3M64EHw36bOSCMsYad0"
+uri = "file://screenshots/appstore/iphone-sv-2-ai.jpg"
+type = "image"
+title = "iPhone SV 2 – Sälj med AI"
+description = "Fota. Klart. AI:n skriver annonsen. (1290×2796)"
+
+[[outputs]]
+id = "G-q4bNs0oZwIwGBgd9m3L"
+uri = "file://screenshots/appstore/iphone-sv-3-annons.jpg"
+type = "image"
+title = "iPhone SV 3 – Annons"
+description = "Sälj snabbare med proffsiga annonser (1290×2796)"
+
+[[outputs]]
+id = "geVl3OUxAH1J4MXn93lMR"
+uri = "file://screenshots/appstore/iphone-en-1-home.jpg"
+type = "image"
+title = "iPhone EN 1 – Home"
+description = "Discover second-hand treasures (1290×2796)"
+
+[[outputs]]
+id = "A5fnKe5zJ6btDG5__Am0y"
+uri = "file://screenshots/appstore/iphone-en-2-ai.jpg"
+type = "image"
+title = "iPhone EN 2 – Sell with AI"
+description = "Snap a photo. AI writes your listing. (1290×2796)"
+
+[[outputs]]
+id = "7hnfsPcxyqEXdJnm_aKls"
+uri = "file://screenshots/appstore/iphone-en-3-listing.jpg"
+type = "image"
+title = "iPhone EN 3 – Listing"
+description = "Sell faster with pro-quality listings (1290×2796)"
+
+[[outputs]]
+id = "JvNSzRIXwr0GW4KsQd47U"
+uri = "file://screenshots/appstore/ipad-sv-1-hem.jpg"
+type = "image"
+title = "iPad SV 1 – Hem"
+description = "Fynda second hand i hela Sverige (2048×2732)"
+
+[[outputs]]
+id = "svJAfIF2BioyML0QME6MW"
+uri = "file://screenshots/appstore/ipad-sv-2-ai.jpg"
+type = "image"
+title = "iPad SV 2 – Sälj med AI"
+description = "Fota. Klart. AI:n skriver annonsen. (2048×2732)"
+
+[[outputs]]
+id = "XvgD_uYOzFLv-FbXf-X4X"
+uri = "file://screenshots/appstore/ipad-sv-3-annons.jpg"
+type = "image"
+title = "iPad SV 3 – Annons"
+description = "Sälj snabbare med proffsiga annonser (2048×2732)"
+
+[[outputs]]
+id = "UGgjOJ-CAnAp0YWNzjqw1"
+uri = "file://screenshots/appstore/ipad-en-1-home.jpg"
+type = "image"
+title = "iPad EN 1 – Home"
+description = "Discover second-hand treasures (2048×2732)"
+
+[[outputs]]
+id = "AOciAjxraPPNUNR9D3bD7"
+uri = "file://screenshots/appstore/ipad-en-2-ai.jpg"
+type = "image"
+title = "iPad EN 2 – Sell with AI"
+description = "Snap a photo. AI writes your listing. (2048×2732)"
+
+[[outputs]]
+id = "GFIUCsiGJK0k13930YKT8"
+uri = "file://screenshots/appstore/ipad-en-3-listing.jpg"
+type = "image"
+title = "iPad EN 3 – Listing"
+description = "Sell faster with pro-quality listings (2048×2732)"
