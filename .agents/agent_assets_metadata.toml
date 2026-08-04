@@ -54,7 +54,7 @@ id = "6EaqUkphzRC1FZ_QDdQQD"
 uri = "file://screenshots/appstore/sellify-appstore-bilder.zip"
 type = "unspecified"
 title = "Alla App Store-bilder (ZIP, uppdaterad)"
-description = "Alla 12 bilder – iPhone 1284×2778 och iPad 2048×2732, svenska och engelska."
+description = "Alla 12 bilder med den nya hem-skärmbilden."
 
 [[outputs]]
 id = "Mpdmft0A21TjmGmZ-s2Zb"
@@ -81,8 +81,8 @@ description = "Sälj snabbare med proffsiga annonser"
 id = "geVl3OUxAH1J4MXn93lMR"
 uri = "file://screenshots/appstore/iphone-en-1-home.jpg"
 type = "image"
-title = "iPhone EN 1 – Home (1284×2778)"
-description = "Discover second-hand treasures"
+title = "iPhone EN 1 – Home (uppdaterad, 1284×2778)"
+description = "Ny version utan ölburken."
 
 [[outputs]]
 id = "A5fnKe5zJ6btDG5__Am0y"
@@ -123,8 +123,8 @@ description = "Sälj snabbare med proffsiga annonser (2048×2732)"
 id = "UGgjOJ-CAnAp0YWNzjqw1"
 uri = "file://screenshots/appstore/ipad-en-1-home.jpg"
 type = "image"
-title = "iPad EN 1 – Home"
-description = "Discover second-hand treasures (2048×2732)"
+title = "iPad EN 1 – Home (uppdaterad, 2048×2732)"
+description = "Ny version utan ölburken."
 
 [[outputs]]
 id = "AOciAjxraPPNUNR9D3bD7"
