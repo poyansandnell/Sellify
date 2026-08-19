@@ -28,3 +28,6 @@ Symptom: TestFlight sign-in works but every API call 401s; server logs show auth
 
 ## Release binaries must not depend on optional globals or unblockable async at startup
 Symptom: standalone build starts but makes ZERO network calls (server logs empty) — startup crashed/stalled before the first fetch. Code paths never exercised in dev (e.g. key derivation only taken when env keys are absent) can hide this. Rules: never call environment-dependent globals like `btoa` at module scope — use pure-JS fallbacks in try/catch; never gate root render on something that can hang (fonts) without a timeout; install an `ErrorUtils` global handler as the FIRST import in `_layout.tsx` so the first uncaught error is visible in an in-app diagnostics panel that works without sign-in.
+
+## Expo config validation in this workspace
+Do not import `@expo/config` directly from a Node script. **Why:** pnpm does not expose that transitive package for direct workspace resolution here. **How to apply:** validate resolved Expo fields with `pnpm --filter @workspace/sellify-mobile exec expo config --json`.
