@@ -139,3 +139,31 @@ uri = "file://screenshots/appstore/ipad-en-3-listing.jpg"
 type = "image"
 title = "iPad EN 3 – Listing"
 description = "Sell faster with pro-quality listings (2048×2732)"
+
+[[outputs]]
+id = "WTbI2ocitzvPY3fUoOiI3"
+uri = "file://attached_assets/generated_images/sellify-icon-concept-1.png"
+type = "image"
+title = "Förslag 1 – Sammanflätat S"
+description = "Två band i lila och blått formar en tydlig, egen Sellify-symbol. Mitt rekommenderade alternativ."
+
+[[outputs]]
+id = "MfRMxGTusjSRLxw59ignG"
+uri = "file://attached_assets/generated_images/sellify-icon-concept-2.png"
+type = "image"
+title = "Förslag 2 – Köp och sälj"
+description = "Två överlappande annonskort symboliserar marknadsplatsen och ett tryggt byte."
+
+[[outputs]]
+id = "GnLWj4IDCSdFhsJfCha8W"
+uri = "file://attached_assets/generated_images/sellify-icon-concept-3.png"
+type = "image"
+title = "Förslag 3 – Marknadsplatsens portal"
+description = "En välkomnande, abstrakt port med en väg in mot nya fynd."
+
+[[outputs]]
+id = "FqW35Vhqac9pMgQyCsYQh"
+uri = "file://attached_assets/generated_images/sellify-icon-concept-4.png"
+type = "image"
+title = "Förslag 4 – Cirkulärt flöde"
+description = "En kompakt symbol för återbruk, rörelse och cirkulär handel."
