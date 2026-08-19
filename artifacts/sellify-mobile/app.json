@@ -17,6 +17,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "se.sellify.app",
       "buildNumber": "1",
+      "icon": "./assets/images/icon.png",
       "usesAppleSignIn": true,
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true,
@@ -25,7 +26,11 @@
     },
     "android": {
       "package": "se.sellify.app",
-      "versionCode": 1
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#12052F"
+      }
     },
     "locales": {
       "sv": "./assets/locales/sv.json",
