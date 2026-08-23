@@ -6,6 +6,8 @@ import { SendMessageBody, StartConversationBody } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
 import { sendPushToUser } from "../lib/push";
 import { ensureProfile } from "./me";
+import { usersAreBlocked } from "../lib/blocking";
+import { contentIsSafe, CONTENT_REJECTED_CODE, CONTENT_REJECTED_MESSAGE } from "../lib/contentSafety";
 
 async function notifyNewMessage(
   recipientId: string,
@@ -76,8 +78,11 @@ router.get("/conversations", requireAuth, async (req: Request, res: Response) =>
     .from(conversations)
     .where(or(eq(conversations.buyerId, userId), eq(conversations.sellerId, userId)))
     .orderBy(desc(conversations.lastMessageAt));
-  const dtos = await Promise.all(rows.map((r) => conversationDto(r.id, userId)));
-  res.json(dtos.filter(Boolean));
+  const visible = await Promise.all(rows.map(async (r) => {
+    const otherId = r.buyerId === userId ? r.sellerId : r.buyerId;
+    return (await usersAreBlocked(userId, otherId)) ? null : conversationDto(r.id, userId);
+  }));
+  res.json(visible.filter(Boolean));
 });
 
 router.post("/conversations", requireAuth, async (req: Request, res: Response) => {
@@ -98,6 +103,18 @@ router.post("/conversations", requireAuth, async (req: Request, res: Response) =
   }
   if (listing.sellerId === userId) {
     res.status(400).json({ error: "Cannot message your own listing" });
+    return;
+  }
+  if (listing.removedAt || listing.status !== "active") {
+    res.status(404).json({ error: "Listing not found" });
+    return;
+  }
+  if (await usersAreBlocked(userId, listing.sellerId)) {
+    res.status(403).json({ error: "Messaging is unavailable for this user" });
+    return;
+  }
+  if (!contentIsSafe(parsed.data.message)) {
+    res.status(422).json({ error: CONTENT_REJECTED_MESSAGE, code: CONTENT_REJECTED_CODE });
     return;
   }
   let [conv] = await db
@@ -132,6 +149,11 @@ async function loadConversation(req: Request, res: Response) {
     .where(eq(conversations.id, Number(req.params.id)));
   const userId = (req as AuthedRequest).userId;
   if (!conv || (conv.buyerId !== userId && conv.sellerId !== userId)) {
+    res.status(404).json({ error: "Conversation not found" });
+    return null;
+  }
+  const otherId = conv.buyerId === userId ? conv.sellerId : conv.buyerId;
+  if (await usersAreBlocked(userId, otherId)) {
     res.status(404).json({ error: "Conversation not found" });
     return null;
   }
@@ -173,6 +195,15 @@ router.post("/conversations/:id/messages", requireAuth, async (req: Request, res
     return;
   }
   const userId = (req as AuthedRequest).userId;
+  const otherId = conv.buyerId === userId ? conv.sellerId : conv.buyerId;
+  if (await usersAreBlocked(userId, otherId)) {
+    res.status(403).json({ error: "Messaging is unavailable for this user" });
+    return;
+  }
+  if (!contentIsSafe(parsed.data.content)) {
+    res.status(422).json({ error: CONTENT_REJECTED_MESSAGE, code: CONTENT_REJECTED_CODE });
+    return;
+  }
   const [m] = await db
     .insert(messages)
     .values({

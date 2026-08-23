@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { useAnalyzeImages, useCreateListing, usePublishListing, useRequestUploadUrl } from '@workspace/api-client-react';
 import { useLocation } from 'wouter';
-import { Camera, Upload, Sparkles, X, Check, CheckCircle2 } from 'lucide-react';
+import { Camera, Upload, Sparkles, X, Check, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { joinApi } from '@/lib/utils';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 type SellStep = 'photos' | 'analyzing' | 'review' | 'publishing';
 
@@ -12,7 +13,7 @@ export default function SellPage() {
   const { t } = useI18n();
   const [, setLocation] = useLocation();
   const [step, setStep] = useState<SellStep>('photos');
-  
+
   // State
   const [images, setImages] = useState<{file?: File, objectPath: string, preview: string}[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -29,20 +30,20 @@ export default function SellPage() {
   // Handlers
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
-    
+
     setIsUploading(true);
     setUploadProgress(0);
     const files = Array.from(e.target.files);
     const newImages = [...images];
-    
+
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       try {
         // 1. Get upload URL
-        const { uploadURL, objectPath } = await requestUploadUrl.mutateAsync({ 
-          data: { name: file.name, size: file.size, contentType: file.type } 
+        const { uploadURL, objectPath } = await requestUploadUrl.mutateAsync({
+          data: { name: file.name, size: file.size, contentType: file.type }
         });
-        
+
         // 2. PUT file
         const putRes = await fetch(uploadURL, {
           method: 'PUT',
@@ -52,23 +53,23 @@ export default function SellPage() {
         if (!putRes.ok) {
           throw new Error(`Upload failed with status ${putRes.status}`);
         }
-        
+
         // 3. Store
         newImages.push({
           file,
           objectPath,
           preview: URL.createObjectURL(file)
         });
-        
+
         setUploadProgress(Math.round(((i + 1) / files.length) * 100));
       } catch (err) {
         console.error("Upload failed", err);
       }
     }
-    
+
     setImages(newImages);
     setIsUploading(false);
-    
+
     // Auto-advance if we have images
     if (newImages.length > 0 && step === 'photos') {
       startAnalysis(newImages.map(img => img.objectPath));
@@ -115,12 +116,16 @@ export default function SellPage() {
           images: images.map(i => i.objectPath)
         }
       });
-      
+
       await publishListing.mutateAsync({ id: listing.id });
-      
+
       setLocation(`/listing/${listing.slug}`);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Publish failed", err);
+      toast.error(err?.error || "Failed to publish listing. Please ensure the content follows our safety guidelines.", {
+        duration: 5000,
+        icon: <ShieldAlert className="w-5 h-5 text-destructive" />
+      });
       setStep('review');
     }
   };
@@ -133,7 +138,7 @@ export default function SellPage() {
       </div>
 
       <div className="max-w-2xl mx-auto p-4 flex flex-col gap-6 mt-4">
-        
+
         {step === 'photos' && (
           <div className="flex flex-col items-center justify-center py-20 text-center gap-6">
             <div className="w-24 h-24 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-2">
@@ -143,15 +148,15 @@ export default function SellPage() {
               <h2 className="text-2xl font-display font-bold mb-2">Ta bilder av produkten</h2>
               <p className="text-muted-foreground max-w-sm mx-auto">Vår AI fyller automatiskt i rubrik, beskrivning och sätter rätt pris baserat på dina bilder.</p>
             </div>
-            
+
             <div className="relative w-full max-w-sm mt-4">
-              <input 
-                type="file" 
-                multiple 
-                accept="image/*" 
+              <input
+                type="file"
+                multiple
+                accept="image/*"
                 onChange={handleFileSelect}
                 disabled={isUploading}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               />
               <button className="w-full h-14 rounded-full bg-primary text-primary-foreground font-bold text-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-xl active:scale-95 transition-all">
                 {isUploading ? (
@@ -225,9 +230,9 @@ export default function SellPage() {
                    </div>
                  )}
                  <div className="relative">
-                   <input 
-                     type="number" 
-                     value={draft.price} 
+                   <input
+                     type="number"
+                     value={draft.price}
                      onChange={(e) => setDraft({...draft, price: e.target.value})}
                      className="w-full h-16 text-3xl font-display font-bold text-center bg-transparent border-b-2 border-border focus:border-primary focus:outline-none transition-colors"
                    />
@@ -238,7 +243,7 @@ export default function SellPage() {
 
             {/* Description Card */}
             <ReviewCard title="Beskrivning">
-               <textarea 
+               <textarea
                  value={draft.description}
                  onChange={(e) => setDraft({...draft, description: e.target.value})}
                  className="w-full h-32 p-3 bg-muted/50 rounded-xl border border-transparent focus:border-primary focus:bg-background focus:outline-none resize-none"
@@ -290,9 +295,9 @@ function EditableField({ label, value, onChange, isAi }: { label: string, value:
         {label}
         {isAi && <span title="AI föreslår att du kontrollerar detta"><Sparkles className="w-3 h-3 text-secondary" /></span>}
       </label>
-      <input 
-        type="text" 
-        value={value} 
+      <input
+        type="text"
+        value={value}
         onChange={(e) => onChange(e.target.value)}
         className={cn(
           "w-full h-12 px-3 rounded-xl border bg-transparent focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium text-foreground",

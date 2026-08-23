@@ -1,15 +1,21 @@
 import { useI18n } from '@/lib/i18n';
 import { useGetListingBySlug, useGetSimilarListings, getGetListingBySlugQueryKey, getGetSimilarListingsQueryKey } from '@workspace/api-client-react';
-import { MapPin, Heart, MessageSquare, ChevronLeft, Flag, Info, Truck } from 'lucide-react';
-import { useRoute, Link } from 'wouter';
+import { MapPin, Heart, MessageSquare, ChevronLeft, Flag, Info, Truck, ShieldAlert } from 'lucide-react';
+import { useRoute, Link, useLocation } from 'wouter';
 import { formatCurrency, formatRelativeTime, joinApi } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { ReportDialog } from '@/components/safety/ReportDialog';
+import { BlockDialog } from '@/components/safety/BlockDialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 export default function ListingDetail() {
   const { t, language } = useI18n();
   const [, params] = useRoute('/listing/:slug');
+  const [, setLocation] = useLocation();
   const slug = params?.slug || '';
+  const queryClient = useQueryClient();
 
   const { data: listing, isLoading } = useGetListingBySlug(slug, { query: { enabled: !!slug, queryKey: getGetListingBySlugQueryKey(slug) } });
   const { data: similar } = useGetSimilarListings(listing?.id ?? 0, { query: { enabled: !!listing?.id, queryKey: getGetSimilarListingsQueryKey(listing?.id ?? 0) } });
@@ -41,7 +47,7 @@ export default function ListingDetail() {
       </div>
 
       <div className="max-w-5xl mx-auto w-full md:p-8 flex flex-col md:flex-row gap-8">
-        
+
         {/* Left: Images */}
         <div className="w-full md:w-3/5 flex flex-col gap-2">
           <div className="aspect-[4/3] md:aspect-square bg-muted md:rounded-3xl overflow-hidden relative">
@@ -125,13 +131,41 @@ export default function ListingDetail() {
           )}
 
           <div className="pt-4 flex justify-center">
-             <button className="text-sm text-muted-foreground flex items-center gap-1 hover:text-foreground">
-               <Flag className="w-4 h-4" /> {t.listing.report}
-             </button>
+             <DropdownMenu>
+               <DropdownMenuTrigger asChild>
+                 <button className="text-sm text-muted-foreground flex items-center gap-1 hover:text-foreground" data-testid="button-listing-options">
+                   <Flag className="w-4 h-4" /> Options
+                 </button>
+               </DropdownMenuTrigger>
+               <DropdownMenuContent align="end">
+                 <ReportDialog
+                    targetType="listing"
+                    reportedUserId={listing.sellerId}
+                    listingId={listing.id}
+                 >
+                   <DropdownMenuItem onSelect={(e) => e.preventDefault()} data-testid="menu-report-listing">
+                     <Flag className="w-4 h-4 mr-2" /> {t.listing.report}
+                   </DropdownMenuItem>
+                 </ReportDialog>
+                 <BlockDialog
+                    userId={listing.sellerId}
+                    userName={listing.sellerName || 'Anonymous'}
+                    sourceListingId={listing.id}
+                    onSuccess={() => {
+                      queryClient.invalidateQueries({ queryKey: getGetListingBySlugQueryKey(slug) });
+                      setLocation('/');
+                    }}
+                 >
+                   <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive" data-testid="menu-block-seller">
+                     <ShieldAlert className="w-4 h-4 mr-2" /> Block Seller
+                   </DropdownMenuItem>
+                 </BlockDialog>
+               </DropdownMenuContent>
+             </DropdownMenu>
           </div>
         </div>
       </div>
-      
+
       {/* Similar listings */}
       {similar && similar.length > 0 && (
         <div className="max-w-5xl mx-auto w-full p-4 md:p-8 mt-8 border-t">

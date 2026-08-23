@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "se.sellify.app",
-      "buildNumber": "1",
+      "buildNumber": "12",
       "icon": "./assets/images/icon.png",
       "usesAppleSignIn": true,
       "infoPlist": {

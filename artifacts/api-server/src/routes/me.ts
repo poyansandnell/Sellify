@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { clerkClient } from "@clerk/express";
-import { desc, eq, inArray, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { db } from "@workspace/db";
 import {
   conversations,
@@ -13,34 +13,12 @@ import {
 import { SavePushTokenBody, UpdateMeBody } from "@workspace/api-zod";
 import { requireAuth, type AuthedRequest } from "../lib/auth";
 import { toListingDtos } from "../lib/listingUtils";
+import { filterBlockedSellerRows } from "../lib/blocking";
+import { ensureProfile } from "../lib/profile";
 
 const router: IRouter = Router();
 
-export async function ensureProfile(userId: string) {
-  const [existing] = await db.select().from(profiles).where(eq(profiles.id, userId));
-  if (existing) return existing;
-  let displayName = "Sellify user";
-  let avatarUrl: string | null = null;
-  try {
-    const u = await clerkClient.users.getUser(userId);
-    displayName =
-      [u.firstName, u.lastName].filter(Boolean).join(" ") ||
-      u.username ||
-      u.emailAddresses[0]?.emailAddress?.split("@")[0] ||
-      displayName;
-    avatarUrl = u.imageUrl ?? null;
-  } catch {
-    // keep defaults if Clerk lookup fails
-  }
-  const [created] = await db
-    .insert(profiles)
-    .values({ id: userId, displayName, avatarUrl })
-    .onConflictDoNothing()
-    .returning();
-  if (created) return created;
-  const [row] = await db.select().from(profiles).where(eq(profiles.id, userId));
-  return row;
-}
+export { ensureProfile } from "../lib/profile";
 
 async function profileDto(userId: string) {
   const p = await ensureProfile(userId);
@@ -59,6 +37,7 @@ async function profileDto(userId: string) {
     country: p.country,
     language: p.language,
     currency: p.currency,
+    isModerator: p.isModerator,
     memberSince: p.createdAt.toISOString(),
     activeListingCount: counts?.active ?? 0,
     soldListingCount: counts?.sold ?? 0,
@@ -115,9 +94,9 @@ router.get("/me/favorites", requireAuth, async (req: Request, res: Response) => 
   const rows = await db
     .select()
     .from(listings)
-    .where(inArray(listings.id, favs.map((f) => f.listingId)))
+    .where(and(inArray(listings.id, favs.map((f) => f.listingId)), isNull(listings.removedAt)))
     .orderBy(desc(listings.createdAt));
-  res.json(await toListingDtos(rows, userId));
+  res.json(await toListingDtos(await filterBlockedSellerRows(rows, userId), userId));
 });
 
 // Permanently delete the user's account: all app data + the Clerk user.
@@ -130,7 +109,7 @@ router.post("/me/delete", requireAuth, async (req: Request, res: Response) => {
   try {
     await clerkClient.users.deleteUser(userId);
   } catch (err) {
-    console.error("Failed to delete Clerk user", userId, err);
+    req.log.error({ err, userId }, "Failed to delete Clerk user");
     res.status(502).json({ error: { message: "Account deletion failed, please try again" } });
     return;
   }
@@ -163,7 +142,7 @@ router.post("/me/delete", requireAuth, async (req: Request, res: Response) => {
       await tx.delete(profiles).where(eq(profiles.id, userId));
     });
   } catch (err) {
-    console.error("Account data purge failed after Clerk deletion", userId, err);
+    req.log.error({ err, userId }, "Account data purge failed after Clerk deletion");
     res.status(500).json({ error: { message: "Account deleted but data cleanup failed" } });
     return;
   }

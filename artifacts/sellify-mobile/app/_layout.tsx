@@ -24,6 +24,7 @@ import {
   setRequestObserver,
 } from '@workspace/api-client-react';
 import { I18nProvider, useI18n } from '@/lib/i18n';
+import { TermsGate } from '@/components/TermsGate';
 
 mark('layout-module-eval');
 setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
@@ -145,7 +146,9 @@ export default function RootLayout() {
             <GestureHandlerRootView>
               <KeyboardProvider>
                 <I18nProvider>
-                  <RootLayoutNav />
+                  <TermsGate>
+                    <RootLayoutNav />
+                  </TermsGate>
                 </I18nProvider>
               </KeyboardProvider>
             </GestureHandlerRootView>

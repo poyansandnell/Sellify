@@ -13,7 +13,7 @@ router.get("/categories", async (_req, res) => {
       nameSv: categories.nameSv,
       nameEn: categories.nameEn,
       icon: categories.icon,
-      listingCount: sql<number>`(select count(*)::int from ${listings} where ${listings.categoryId} = ${categories.id} and ${listings.status} = 'active')`,
+      listingCount: sql<number>`(select count(*)::int from ${listings} where ${listings.categoryId} = ${categories.id} and ${listings.status} = 'active' and ${listings.removedAt} is null)`,
     })
     .from(categories)
     .orderBy(categories.id);

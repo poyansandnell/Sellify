@@ -1,10 +1,12 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { and, desc, eq, asc, gte, ilike, lte, ne, or, sql } from "drizzle-orm";
+import { and, desc, eq, asc, gte, ilike, isNull, lte, ne, or, sql } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { conversations, favorites, listings, messages } from "@workspace/db/schema";
 import { CreateListingBody, UpdateListingBody } from "@workspace/api-zod";
 import { requireAuth, getUserId, type AuthedRequest } from "../lib/auth";
 import { slugify, toListingDto, toListingDtos } from "../lib/listingUtils";
+import { listingContentIsSafe, CONTENT_REJECTED_CODE, CONTENT_REJECTED_MESSAGE } from "../lib/contentSafety";
+import { filterBlockedSellerRows, usersAreBlocked } from "../lib/blocking";
 
 const router: IRouter = Router();
 
@@ -23,7 +25,7 @@ router.get("/listings", async (req: Request, res: Response) => {
   const limit = Math.min(Number(req.query.limit) || 40, 100);
   const offset = Number(req.query.offset) || 0;
 
-  const conds = [eq(listings.status, "active")];
+  const conds = [eq(listings.status, "active"), isNull(listings.removedAt)];
   if (q)
     conds.push(
       or(
@@ -53,7 +55,8 @@ router.get("/listings", async (req: Request, res: Response) => {
     db.select({ total: sql<number>`count(*)::int` }).from(listings).where(where),
   ]);
 
-  res.json({ items: await toListingDtos(rows, getUserId(req)), total });
+  const visible = await filterBlockedSellerRows(rows, getUserId(req));
+  res.json({ items: await toListingDtos(visible, getUserId(req)), total: getUserId(req) ? visible.length : total });
 });
 
 router.post("/listings", requireAuth, async (req: Request, res: Response) => {
@@ -63,6 +66,10 @@ router.post("/listings", requireAuth, async (req: Request, res: Response) => {
     return;
   }
   const d = parsed.data;
+  if (!listingContentIsSafe(d)) {
+    res.status(422).json({ error: CONTENT_REJECTED_MESSAGE, code: CONTENT_REJECTED_CODE });
+    return;
+  }
   const status = d.status === "active" ? "active" : "draft";
   const [row] = await db
     .insert(listings)
@@ -105,7 +112,7 @@ router.get("/listings/slug/:slug", async (req: Request, res: Response) => {
     return;
   }
   const viewerId = getUserId(req);
-  if (row.status !== "active" && viewerId !== row.sellerId && row.status !== "sold") {
+  if (row.removedAt || (row.status !== "active" && viewerId !== row.sellerId && row.status !== "sold") || (viewerId && viewerId !== row.sellerId && await usersAreBlocked(viewerId, row.sellerId))) {
     res.status(404).json({ error: "Listing not found" });
     return;
   }
@@ -122,7 +129,7 @@ router.get("/listings/slug/:slug", async (req: Request, res: Response) => {
 router.get("/listings/:id", async (req: Request, res: Response) => {
   const [row] = await db.select().from(listings).where(eq(listings.id, Number(req.params.id)));
   const viewerId = getUserId(req);
-  if (!row || (row.status === "draft" && viewerId !== row.sellerId)) {
+  if (!row || row.removedAt || (row.status === "draft" && viewerId !== row.sellerId) || (row && viewerId && viewerId !== row.sellerId && await usersAreBlocked(viewerId, row.sellerId))) {
     res.status(404).json({ error: "Listing not found" });
     return;
   }
@@ -151,6 +158,10 @@ router.patch("/listings/:id", requireAuth, async (req: Request, res: Response) =
     return;
   }
   const d = parsed.data;
+  if (!listingContentIsSafe({ ...row, ...d })) {
+    res.status(422).json({ error: CONTENT_REJECTED_MESSAGE, code: CONTENT_REJECTED_CODE });
+    return;
+  }
   const [updated] = await db
     .update(listings)
     .set({
@@ -193,6 +204,10 @@ router.delete("/listings/:id", requireAuth, async (req: Request, res: Response) 
 router.post("/listings/:id/publish", requireAuth, async (req: Request, res: Response) => {
   const row = await loadOwned(req, res);
   if (!row) return;
+  if (!listingContentIsSafe(row)) {
+    res.status(422).json({ error: CONTENT_REJECTED_MESSAGE, code: CONTENT_REJECTED_CODE });
+    return;
+  }
   const [updated] = await db
     .update(listings)
     .set({ status: "active", publishedAt: row.publishedAt ?? new Date() })
@@ -215,6 +230,11 @@ router.post("/listings/:id/sold", requireAuth, async (req: Request, res: Respons
 router.post("/listings/:id/favorite", requireAuth, async (req: Request, res: Response) => {
   const userId = (req as AuthedRequest).userId;
   const listingId = Number(req.params.id);
+  const [listing] = await db.select().from(listings).where(eq(listings.id, listingId));
+  if (!listing || listing.removedAt || listing.status !== "active" || await usersAreBlocked(userId, listing.sellerId)) {
+    res.status(404).json({ error: "Listing not found" });
+    return;
+  }
   const existing = await db
     .select()
     .from(favorites)
@@ -242,7 +262,7 @@ router.get("/listings/:id/similar", async (req: Request, res: Response) => {
     res.json([]);
     return;
   }
-  const conds = [eq(listings.status, "active"), ne(listings.id, row.id)];
+  const conds = [eq(listings.status, "active"), isNull(listings.removedAt), ne(listings.id, row.id)];
   if (row.categoryId != null) conds.push(eq(listings.categoryId, row.categoryId));
   const rows = await db
     .select()
@@ -250,7 +270,7 @@ router.get("/listings/:id/similar", async (req: Request, res: Response) => {
     .where(and(...conds))
     .orderBy(desc(listings.publishedAt))
     .limit(8);
-  res.json(await toListingDtos(rows, getUserId(req)));
+  res.json(await toListingDtos(await filterBlockedSellerRows(rows, getUserId(req)), getUserId(req)));
 });
 
 router.get("/listings/:id/stats", requireAuth, async (req: Request, res: Response) => {

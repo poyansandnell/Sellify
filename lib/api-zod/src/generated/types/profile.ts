@@ -19,6 +19,7 @@ export interface Profile {
   language?: string | null;
   /** @nullable */
   currency?: string | null;
+  isModerator: boolean;
   memberSince: string;
   activeListingCount?: number;
   soldListingCount?: number;

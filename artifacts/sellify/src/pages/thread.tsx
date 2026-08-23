@@ -1,12 +1,17 @@
 import { useI18n } from '@/lib/i18n';
 import { useGetMessages, useSendMessage, useStartConversation, useListConversations, getGetMessagesQueryKey, getListConversationsQueryKey } from '@workspace/api-client-react';
 import { useRoute, Link, useLocation } from 'wouter';
-import { ChevronLeft, Send, Image as ImageIcon } from 'lucide-react';
+import { ChevronLeft, Send, Image as ImageIcon, MoreVertical, Flag, ShieldAlert } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { joinApi } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { useUser } from '@clerk/react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ReportDialog } from '@/components/safety/ReportDialog';
+import { BlockDialog } from '@/components/safety/BlockDialog';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 export default function Thread() {
   const [, params] = useRoute('/messages/:id');
@@ -14,7 +19,8 @@ export default function Thread() {
   const id = params?.id || '';
   const { user } = useUser();
   const [text, setText] = useState('');
-  
+  const queryClient = useQueryClient();
+
   // Handlers for "new" flow based on query params
   const isNew = id === 'new';
   const urlParams = new URLSearchParams(window.location.search);
@@ -23,12 +29,12 @@ export default function Thread() {
   const startConversation = useStartConversation();
   const sendMessage = useSendMessage();
 
-  const { data: messagesData, isLoading, refetch } = useGetMessages(Number(id), { 
-    query: { 
-      enabled: !isNew && !!id, 
+  const { data: messagesData, isLoading, refetch } = useGetMessages(Number(id), {
+    query: {
+      enabled: !isNew && !!id,
       refetchInterval: 5000,
       queryKey: getGetMessagesQueryKey(Number(id))
-    } 
+    }
   });
 
   const { data: convs } = useListConversations({ query: { enabled: !isNew, queryKey: getListConversationsQueryKey() } });
@@ -44,7 +50,7 @@ export default function Thread() {
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim()) return;
-    
+
     const content = text;
     setText('');
 
@@ -61,8 +67,14 @@ export default function Thread() {
         });
         refetch();
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to send message", err);
+      toast.error(err?.error || "Failed to send message. Please ensure it follows our safety guidelines.", {
+        duration: 5000,
+        icon: <ShieldAlert className="w-5 h-5 text-destructive" />
+      });
+      // Restore text if it failed
+      setText(content);
     }
   };
 
@@ -84,6 +96,38 @@ export default function Thread() {
                 <p className="text-xs text-muted-foreground truncate">{conversation.listingTitle}</p>
               )}
             </div>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="w-10 h-10 -mr-2 rounded-full flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground" data-testid="button-thread-options">
+                  <MoreVertical className="w-5 h-5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <ReportDialog
+                  targetType="user"
+                  reportedUserId={conversation.buyerId === user?.id ? conversation.sellerId : conversation.buyerId}
+                  conversationId={conversation.id}
+                >
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} data-testid="menu-report-user">
+                    <Flag className="w-4 h-4 mr-2" /> Report User
+                  </DropdownMenuItem>
+                </ReportDialog>
+                <BlockDialog
+                  userId={conversation.buyerId === user?.id ? conversation.sellerId : conversation.buyerId}
+                  userName={conversation.otherPartyName || 'Anonymous'}
+                  sourceConversationId={conversation.id}
+                  onSuccess={() => {
+                    queryClient.invalidateQueries({ queryKey: getListConversationsQueryKey() });
+                    setLocation('/messages');
+                  }}
+                >
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive" data-testid="menu-block-user">
+                    <ShieldAlert className="w-4 h-4 mr-2" /> Block User
+                  </DropdownMenuItem>
+                </BlockDialog>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </>
         ) : (
           <div className="font-bold">Ny konversation</div>
@@ -101,14 +145,28 @@ export default function Thread() {
           const isMeMsg = conversation ? msg.senderId !== (conversation.buyerId === user?.id ? conversation.sellerId : conversation.buyerId) : true;
 
           return (
-            <div key={msg.id} className={cn("flex flex-col max-w-[80%]", isMeMsg ? "self-end items-end" : "self-start items-start")}>
-              <div className={cn(
-                "px-4 py-2.5 rounded-3xl",
-                isMeMsg 
-                  ? "bg-primary text-primary-foreground rounded-tr-sm" 
-                  : "bg-muted text-foreground rounded-tl-sm"
-              )}>
-                {msg.content}
+            <div key={msg.id} className={cn("flex flex-col max-w-[80%] group", isMeMsg ? "self-end items-end" : "self-start items-start")}>
+              <div className="flex items-center gap-2">
+                {!isMeMsg && (
+                  <ReportDialog
+                    targetType="message"
+                    reportedUserId={msg.senderId}
+                    messageId={msg.id}
+                    conversationId={conversation?.id}
+                  >
+                    <button className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-muted-foreground hover:text-foreground" title="Report message" data-testid={`button-report-message-${msg.id}`}>
+                      <Flag className="w-3 h-3" />
+                    </button>
+                  </ReportDialog>
+                )}
+                <div className={cn(
+                  "px-4 py-2.5 rounded-3xl",
+                  isMeMsg
+                    ? "bg-primary text-primary-foreground rounded-tr-sm"
+                    : "bg-muted text-foreground rounded-tl-sm"
+                )}>
+                  {msg.content}
+                </div>
               </div>
               <span className="text-[10px] text-muted-foreground mt-1 px-1">
                 {new Date(msg.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
@@ -126,16 +184,16 @@ export default function Thread() {
             <ImageIcon className="w-6 h-6" />
           </button>
           <div className="flex-1 bg-muted rounded-3xl flex items-center relative">
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder="Skriv ett meddelande..."
               className="w-full min-h-[48px] bg-transparent px-4 py-3 focus:outline-none"
             />
           </div>
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={!text.trim()}
             className="w-12 h-12 shrink-0 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 disabled:opacity-50 disabled:active:scale-100 transition-all active:scale-95"
           >

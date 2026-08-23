@@ -1,14 +1,16 @@
 import React from 'react';
 import { Link, useLocation } from 'wouter';
-import { Home, PlusCircle, MessageSquare, List, User } from 'lucide-react';
+import { Home, PlusCircle, MessageSquare, List, User, Shield } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { useUser, Show } from '@clerk/react';
 import { cn } from '@/lib/utils';
+import { useGetMe } from '@workspace/api-client-react';
 
 export function Navigation({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { t } = useI18n();
   const { user } = useUser();
+  const { data: me } = useGetMe();
 
   const navItems = [
     { href: '/', label: t.nav.home, icon: Home },
@@ -17,6 +19,10 @@ export function Navigation({ children }: { children: React.ReactNode }) {
     { href: '/my-listings', label: t.nav.myListings, icon: List },
     { href: '/profile', label: t.nav.profile, icon: User },
   ];
+
+  if (me?.isModerator) {
+    navItems.push({ href: '/moderation', label: 'Moderation', icon: Shield });
+  }
 
   return (
     <div className="flex flex-col min-h-[100dvh] bg-background">
@@ -55,7 +61,7 @@ export function Navigation({ children }: { children: React.ReactNode }) {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t border-border flex items-center justify-around px-2 z-50 pb-safe shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
         {navItems.map(item => {
           const isActive = location === item.href || (item.href !== '/' && location.startsWith(item.href));
-          
+
           if (item.special) {
             return (
               <Link key={item.href} href={item.href} className="flex flex-col items-center justify-center w-16 h-full relative -top-3">

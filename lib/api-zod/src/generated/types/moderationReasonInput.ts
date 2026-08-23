@@ -6,7 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface ErrorEnvelope {
-  error: string;
-  code?: string;
+export interface ModerationReasonInput {
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  reason: string;
 }

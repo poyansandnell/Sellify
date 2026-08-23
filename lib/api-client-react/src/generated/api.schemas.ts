@@ -11,6 +11,7 @@ export interface HealthStatus {
 
 export interface ErrorEnvelope {
   error: string;
+  code?: string;
 }
 
 export interface Category {
@@ -394,6 +395,7 @@ export interface Profile {
   language?: string | null;
   /** @nullable */
   currency?: string | null;
+  isModerator: boolean;
   memberSince: string;
   activeListingCount?: number;
   soldListingCount?: number;
@@ -506,6 +508,202 @@ export interface UploadUrlResponse {
   metadata?: UploadUrlRequest;
 }
 
+export interface TermsAcceptance {
+  currentVersion: string;
+  /** @nullable */
+  acceptedVersion: string | null;
+  /** @nullable */
+  acceptedAt: string | null;
+}
+
+export interface TermsAcceptanceInput {
+  version: string;
+}
+
+export interface UserBlock {
+  id: number;
+  blockedUserId: string;
+  /** @nullable */
+  sourceListingId?: number | null;
+  /** @nullable */
+  sourceConversationId?: number | null;
+  createdAt: string;
+}
+
+export interface UserBlockInput {
+  /** @minLength 1 */
+  userId: string;
+  /** @nullable */
+  sourceListingId?: number | null;
+  /** @nullable */
+  sourceConversationId?: number | null;
+  /**
+     * @maxLength 1000
+     * @nullable
+     */
+  details?: string | null;
+}
+
+export type ContentReportInputTargetType = typeof ContentReportInputTargetType[keyof typeof ContentReportInputTargetType];
+
+
+export const ContentReportInputTargetType = {
+  listing: 'listing',
+  user: 'user',
+  message: 'message',
+} as const;
+
+export type ContentReportInputReason = typeof ContentReportInputReason[keyof typeof ContentReportInputReason];
+
+
+export const ContentReportInputReason = {
+  inappropriate: 'inappropriate',
+  fraud: 'fraud',
+  prohibited_item: 'prohibited_item',
+  spam: 'spam',
+  harassment: 'harassment',
+  other: 'other',
+  blocked_user: 'blocked_user',
+} as const;
+
+export interface ContentReportInput {
+  /** @minLength 1 */
+  reportedUserId: string;
+  targetType: ContentReportInputTargetType;
+  /** @nullable */
+  listingId?: number | null;
+  /** @nullable */
+  messageId?: number | null;
+  /** @nullable */
+  conversationId?: number | null;
+  reason: ContentReportInputReason;
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  details?: string | null;
+}
+
+export type ContentReportTargetType = typeof ContentReportTargetType[keyof typeof ContentReportTargetType];
+
+
+export const ContentReportTargetType = {
+  listing: 'listing',
+  user: 'user',
+  message: 'message',
+  block: 'block',
+} as const;
+
+export type ContentReportReason = typeof ContentReportReason[keyof typeof ContentReportReason];
+
+
+export const ContentReportReason = {
+  inappropriate: 'inappropriate',
+  fraud: 'fraud',
+  prohibited_item: 'prohibited_item',
+  spam: 'spam',
+  harassment: 'harassment',
+  other: 'other',
+  blocked_user: 'blocked_user',
+} as const;
+
+export type ContentReportStatus = typeof ContentReportStatus[keyof typeof ContentReportStatus];
+
+
+export const ContentReportStatus = {
+  open: 'open',
+  in_review: 'in_review',
+  resolved: 'resolved',
+  dismissed: 'dismissed',
+} as const;
+
+export interface ContentReport {
+  id: number;
+  reporterId: string;
+  reportedUserId: string;
+  targetType: ContentReportTargetType;
+  /** @nullable */
+  listingId?: number | null;
+  /** @nullable */
+  messageId?: number | null;
+  /** @nullable */
+  conversationId?: number | null;
+  reason: ContentReportReason;
+  /** @nullable */
+  details?: string | null;
+  status: ContentReportStatus;
+  createdAt: string;
+  dueAt: string;
+  updatedAt: string;
+  /** @nullable */
+  resolvedAt?: string | null;
+  /** @nullable */
+  resolvedBy?: string | null;
+  /** @nullable */
+  moderatorNotes?: string | null;
+  moderatorActions?: string[];
+  overdue: boolean;
+  /** @nullable */
+  reporterName?: string | null;
+  /** @nullable */
+  reportedUserName?: string | null;
+  /** @nullable */
+  listingTitle?: string | null;
+}
+
+export type ContentReportUpdateStatus = typeof ContentReportUpdateStatus[keyof typeof ContentReportUpdateStatus];
+
+
+export const ContentReportUpdateStatus = {
+  open: 'open',
+  in_review: 'in_review',
+  resolved: 'resolved',
+  dismissed: 'dismissed',
+} as const;
+
+export interface ContentReportUpdate {
+  status?: ContentReportUpdateStatus;
+  /**
+     * @maxLength 4000
+     * @nullable
+     */
+  moderatorNotes?: string | null;
+  moderatorActions?: string[];
+}
+
+export interface ModerationReasonInput {
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  reason: string;
+}
+
+export type ModerationEventMetadata = { [key: string]: unknown };
+
+export interface ModerationEvent {
+  id: number;
+  /** @nullable */
+  actorId?: string | null;
+  eventType: string;
+  /** @nullable */
+  targetUserId?: string | null;
+  /** @nullable */
+  listingId?: number | null;
+  /** @nullable */
+  reportId?: number | null;
+  /** @nullable */
+  conversationId?: number | null;
+  metadata?: ModerationEventMetadata;
+  createdAt: string;
+  /** @nullable */
+  actorName?: string | null;
+  /** @nullable */
+  targetUserName?: string | null;
+  /** @nullable */
+  listingTitle?: string | null;
+}
+
 export type ListListingsParams = {
 q?: string;
 categoryId?: number;
@@ -533,4 +731,18 @@ export type GetHomeFeedParams = {
 city?: string;
 country?: string;
 };
+
+export type ListModerationReportsParams = {
+status?: ListModerationReportsStatus;
+};
+
+export type ListModerationReportsStatus = typeof ListModerationReportsStatus[keyof typeof ListModerationReportsStatus];
+
+
+export const ListModerationReportsStatus = {
+  open: 'open',
+  in_review: 'in_review',
+  resolved: 'resolved',
+  dismissed: 'dismissed',
+} as const;
 

@@ -1,6 +1,7 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Platform,
   Pressable,
   StyleSheet,
@@ -19,6 +20,7 @@ import { useSignIn, useSignUp } from '@clerk/expo';
 
 // Minimal local shape for errors returned by Clerk Core v3 Future methods.
 type ClerkError = { code?: string; message?: string; longMessage?: string };
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { clearClerkTokenCache } from '@/lib/clerkSession';
 import { useColors } from '@/hooks/useColors';
 import { useI18n } from '@/lib/i18n';
@@ -52,6 +54,13 @@ export default function SignInScreen() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [showClearSession, setShowClearSession] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+
+  useEffect(() => {
+    if (!clerk.session) {
+      AsyncStorage.removeItem('pendingTermsAcceptance');
+    }
+  }, [clerk.session]);
 
   const done = useCallback(() => {
     if (router.canGoBack()) router.back();
@@ -87,9 +96,14 @@ export default function SignInScreen() {
   };
 
   const onOauth = async (strategy: 'oauth_google' | 'oauth_apple') => {
+    if (!termsAccepted) {
+      setError(t.termsRequired);
+      return;
+    }
     setError('');
     setBusy(true);
     try {
+      await AsyncStorage.setItem('pendingTermsAcceptance', JSON.stringify({ version: '2026-08-23', timestamp: Date.now() }));
       // If a stale local session exists, a new SSO attempt will fail with
       // "session_exists" — clear it up-front so OAuth always starts clean.
       if (clerk.session) {
@@ -103,11 +117,13 @@ export default function SignInScreen() {
         await setActive({ session: createdSessionId });
         done();
       } else {
+        await AsyncStorage.removeItem('pendingTermsAcceptance');
         // The browser flow returned without a session (cancelled, or extra
         // verification required) — tell the user instead of failing silently.
         setError(t.oauthIncomplete);
       }
     } catch (e: any) {
+      await AsyncStorage.removeItem('pendingTermsAcceptance');
       if (isSessionExists(e)) {
         await resetLocalSession();
         setError(t.sessionCleared);
@@ -177,10 +193,15 @@ export default function SignInScreen() {
   };
 
   const onSignIn = async () => {
+    if (!termsAccepted) {
+      setError(t.termsRequired);
+      return;
+    }
     if (!signIn) return;
     setError('');
     setBusy(true);
     try {
+      await AsyncStorage.setItem('pendingTermsAcceptance', JSON.stringify({ version: '2026-08-23', timestamp: Date.now() }));
       let err = await attemptEmailSignIn();
       if (err && isSessionExists(err)) {
         // A stale session from an earlier build blocks new sign-ins.
@@ -189,8 +210,12 @@ export default function SignInScreen() {
         err = await attemptEmailSignIn();
         if (err) setShowClearSession(true);
       }
-      if (err) setError(errText(err));
+      if (err) {
+        await AsyncStorage.removeItem('pendingTermsAcceptance');
+        setError(errText(err));
+      }
     } catch (e: any) {
+      await AsyncStorage.removeItem('pendingTermsAcceptance');
       setError(errText(e));
     } finally {
       setBusy(false);
@@ -198,10 +223,15 @@ export default function SignInScreen() {
   };
 
   const onSignUp = async () => {
+    if (!termsAccepted) {
+      setError(t.termsRequired);
+      return;
+    }
     if (!signUp) return;
     setError('');
     setBusy(true);
     try {
+      await AsyncStorage.setItem('pendingTermsAcceptance', JSON.stringify({ version: '2026-08-23', timestamp: Date.now() }));
       if (clerk.session) {
         await resetLocalSession();
       }
@@ -210,6 +240,7 @@ export default function SignInScreen() {
         password,
       });
       if (createError) {
+        await AsyncStorage.removeItem('pendingTermsAcceptance');
         if (isSessionExists(createError)) {
           await resetLocalSession();
           setError(t.sessionCleared);
@@ -220,6 +251,7 @@ export default function SignInScreen() {
       }
       const { error: sendError } = await signUp.verifications.sendEmailCode();
       if (sendError) {
+        await AsyncStorage.removeItem('pendingTermsAcceptance');
         setError(errText(sendError));
         return;
       }
@@ -227,6 +259,7 @@ export default function SignInScreen() {
       setVerifyContext('sign-up');
       setMode('verify');
     } catch (e: any) {
+      await AsyncStorage.removeItem('pendingTermsAcceptance');
       setError(errText(e));
     } finally {
       setBusy(false);
@@ -260,6 +293,15 @@ export default function SignInScreen() {
     } finally {
       setBusy(false);
     }
+  };
+
+  const openLink = (path: string) => {
+    const domain = process.env.EXPO_PUBLIC_DOMAIN;
+    if (!domain) {
+      Alert.alert(t.error, t.missingDomainConfig);
+      return;
+    }
+    WebBrowser.openBrowserAsync(`https://${domain}${path}`);
   };
 
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
@@ -298,6 +340,42 @@ export default function SignInScreen() {
 
         {mode !== 'verify' ? (
           <>
+            <View style={styles.termsRow}>
+              <Pressable
+                testID="terms-checkbox"
+                onPress={() => {
+                  setTermsAccepted(!termsAccepted);
+                  if (error === t.termsRequired) setError('');
+                }}
+                hitSlop={8}
+                style={styles.checkbox}
+              >
+                <Feather
+                  name={termsAccepted ? 'check-square' : 'square'}
+                  size={22}
+                  color={termsAccepted ? colors.primary : colors.mutedForeground}
+                />
+              </Pressable>
+              <Text style={[styles.termsText, { color: colors.mutedForeground }]}>
+                {t.termsAgreement}
+                <Text
+                  testID="terms-link"
+                  style={{ color: colors.primary, textDecorationLine: 'underline' }}
+                  onPress={() => openLink('/terms')}
+                >
+                  {t.termsOfUse}
+                </Text>
+                {t.and}
+                <Text
+                  testID="privacy-link"
+                  style={{ color: colors.primary, textDecorationLine: 'underline' }}
+                  onPress={() => openLink('/privacy')}
+                >
+                  {t.privacyPolicy}
+                </Text>
+              </Text>
+            </View>
+
             <Pressable
               testID="google-sign-in"
               onPress={() => onOauth('oauth_google')}
@@ -542,5 +620,21 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_500Medium',
     textAlign: 'center',
     marginBottom: 16,
+  },
+  termsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+    gap: 12,
+    paddingRight: 12,
+  },
+  checkbox: {
+    marginTop: 2,
+  },
+  termsText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: 'Inter_400Regular',
   },
 });

@@ -732,6 +732,7 @@ export const GetMeResponse = zod.object({
   "country": zod.string().nullish(),
   "language": zod.string().nullish(),
   "currency": zod.string().nullish(),
+  "isModerator": zod.boolean(),
   "memberSince": zod.string(),
   "activeListingCount": zod.number().optional(),
   "soldListingCount": zod.number().optional()
@@ -761,6 +762,7 @@ export const UpdateMeResponse = zod.object({
   "country": zod.string().nullish(),
   "language": zod.string().nullish(),
   "currency": zod.string().nullish(),
+  "isModerator": zod.boolean(),
   "memberSince": zod.string(),
   "activeListingCount": zod.number().optional(),
   "soldListingCount": zod.number().optional()
@@ -1074,5 +1076,224 @@ export const GetStorageObjectParams = zod.object({
 })
 
 export const GetStorageObjectResponse = zod.unknown()
+
+
+export const GetTermsAcceptanceResponse = zod.object({
+  "currentVersion": zod.string(),
+  "acceptedVersion": zod.string().nullable(),
+  "acceptedAt": zod.string().nullable()
+})
+
+
+export const AcceptTermsBody = zod.object({
+  "version": zod.string()
+})
+
+export const AcceptTermsResponse = zod.object({
+  "currentVersion": zod.string(),
+  "acceptedVersion": zod.string().nullable(),
+  "acceptedAt": zod.string().nullable()
+})
+
+
+
+export const createContentReportBodyDetailsMax = 2000;
+
+
+
+export const CreateContentReportBody = zod.object({
+  "reportedUserId": zod.string().min(1),
+  "targetType": zod.enum(['listing', 'user', 'message']),
+  "listingId": zod.number().nullish(),
+  "messageId": zod.number().nullish(),
+  "conversationId": zod.number().nullish(),
+  "reason": zod.enum(['inappropriate', 'fraud', 'prohibited_item', 'spam', 'harassment', 'other', 'blocked_user']),
+  "details": zod.string().max(createContentReportBodyDetailsMax).nullish()
+})
+
+export const CreateContentReportResponse = zod.object({
+  "id": zod.number(),
+  "reporterId": zod.string(),
+  "reportedUserId": zod.string(),
+  "targetType": zod.enum(['listing', 'user', 'message', 'block']),
+  "listingId": zod.number().nullish(),
+  "messageId": zod.number().nullish(),
+  "conversationId": zod.number().nullish(),
+  "reason": zod.enum(['inappropriate', 'fraud', 'prohibited_item', 'spam', 'harassment', 'other', 'blocked_user']),
+  "details": zod.string().nullish(),
+  "status": zod.enum(['open', 'in_review', 'resolved', 'dismissed']),
+  "createdAt": zod.string(),
+  "dueAt": zod.string(),
+  "updatedAt": zod.string(),
+  "resolvedAt": zod.string().nullish(),
+  "resolvedBy": zod.string().nullish(),
+  "moderatorNotes": zod.string().nullish(),
+  "moderatorActions": zod.array(zod.string()).optional(),
+  "overdue": zod.boolean(),
+  "reporterName": zod.string().nullish(),
+  "reportedUserName": zod.string().nullish(),
+  "listingTitle": zod.string().nullish()
+})
+
+
+export const ListMyBlocksResponseItem = zod.object({
+  "id": zod.number(),
+  "blockedUserId": zod.string(),
+  "sourceListingId": zod.number().nullish(),
+  "sourceConversationId": zod.number().nullish(),
+  "createdAt": zod.string()
+})
+export const ListMyBlocksResponse = zod.array(ListMyBlocksResponseItem)
+
+
+
+export const blockUserBodyDetailsMax = 1000;
+
+
+
+export const BlockUserBody = zod.object({
+  "userId": zod.string().min(1),
+  "sourceListingId": zod.number().nullish(),
+  "sourceConversationId": zod.number().nullish(),
+  "details": zod.string().max(blockUserBodyDetailsMax).nullish()
+})
+
+export const BlockUserResponse = zod.object({
+  "id": zod.number(),
+  "blockedUserId": zod.string(),
+  "sourceListingId": zod.number().nullish(),
+  "sourceConversationId": zod.number().nullish(),
+  "createdAt": zod.string()
+})
+
+
+export const UnblockUserParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+export const UnblockUserResponse = zod.void()
+
+
+export const ListModerationReportsQueryParams = zod.object({
+  "status": zod.enum(['open', 'in_review', 'resolved', 'dismissed']).optional()
+})
+
+export const ListModerationReportsResponseItem = zod.object({
+  "id": zod.number(),
+  "reporterId": zod.string(),
+  "reportedUserId": zod.string(),
+  "targetType": zod.enum(['listing', 'user', 'message', 'block']),
+  "listingId": zod.number().nullish(),
+  "messageId": zod.number().nullish(),
+  "conversationId": zod.number().nullish(),
+  "reason": zod.enum(['inappropriate', 'fraud', 'prohibited_item', 'spam', 'harassment', 'other', 'blocked_user']),
+  "details": zod.string().nullish(),
+  "status": zod.enum(['open', 'in_review', 'resolved', 'dismissed']),
+  "createdAt": zod.string(),
+  "dueAt": zod.string(),
+  "updatedAt": zod.string(),
+  "resolvedAt": zod.string().nullish(),
+  "resolvedBy": zod.string().nullish(),
+  "moderatorNotes": zod.string().nullish(),
+  "moderatorActions": zod.array(zod.string()).optional(),
+  "overdue": zod.boolean(),
+  "reporterName": zod.string().nullish(),
+  "reportedUserName": zod.string().nullish(),
+  "listingTitle": zod.string().nullish()
+})
+export const ListModerationReportsResponse = zod.array(ListModerationReportsResponseItem)
+
+
+export const UpdateModerationReportParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const updateModerationReportBodyModeratorNotesMax = 4000;
+
+
+
+export const UpdateModerationReportBody = zod.object({
+  "status": zod.enum(['open', 'in_review', 'resolved', 'dismissed']).optional(),
+  "moderatorNotes": zod.string().max(updateModerationReportBodyModeratorNotesMax).nullish(),
+  "moderatorActions": zod.array(zod.string()).optional()
+})
+
+export const UpdateModerationReportResponse = zod.object({
+  "id": zod.number(),
+  "reporterId": zod.string(),
+  "reportedUserId": zod.string(),
+  "targetType": zod.enum(['listing', 'user', 'message', 'block']),
+  "listingId": zod.number().nullish(),
+  "messageId": zod.number().nullish(),
+  "conversationId": zod.number().nullish(),
+  "reason": zod.enum(['inappropriate', 'fraud', 'prohibited_item', 'spam', 'harassment', 'other', 'blocked_user']),
+  "details": zod.string().nullish(),
+  "status": zod.enum(['open', 'in_review', 'resolved', 'dismissed']),
+  "createdAt": zod.string(),
+  "dueAt": zod.string(),
+  "updatedAt": zod.string(),
+  "resolvedAt": zod.string().nullish(),
+  "resolvedBy": zod.string().nullish(),
+  "moderatorNotes": zod.string().nullish(),
+  "moderatorActions": zod.array(zod.string()).optional(),
+  "overdue": zod.boolean(),
+  "reporterName": zod.string().nullish(),
+  "reportedUserName": zod.string().nullish(),
+  "listingTitle": zod.string().nullish()
+})
+
+
+export const ListModerationEventsResponseItem = zod.object({
+  "id": zod.number(),
+  "actorId": zod.string().nullish(),
+  "eventType": zod.string(),
+  "targetUserId": zod.string().nullish(),
+  "listingId": zod.number().nullish(),
+  "reportId": zod.number().nullish(),
+  "conversationId": zod.number().nullish(),
+  "metadata": zod.record(zod.string(), zod.unknown()).optional(),
+  "createdAt": zod.string(),
+  "actorName": zod.string().nullish(),
+  "targetUserName": zod.string().nullish(),
+  "listingTitle": zod.string().nullish()
+})
+export const ListModerationEventsResponse = zod.array(ListModerationEventsResponseItem)
+
+
+export const RemoveModerationListingParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const removeModerationListingBodyReasonMax = 1000;
+
+
+
+export const RemoveModerationListingBody = zod.object({
+  "reason": zod.string().min(1).max(removeModerationListingBodyReasonMax)
+})
+
+export const RemoveModerationListingResponse = zod.void()
+
+
+export const SuspendModerationUserParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const suspendModerationUserBodyReasonMax = 1000;
+
+
+
+export const SuspendModerationUserBody = zod.object({
+  "reason": zod.string().min(1).max(suspendModerationUserBodyReasonMax)
+})
+
+export const SuspendModerationUserResponse = zod.void()
+
+
+export const UnsuspendModerationUserParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UnsuspendModerationUserResponse = zod.void()
 
 

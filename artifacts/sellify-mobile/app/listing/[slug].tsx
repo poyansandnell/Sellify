@@ -37,7 +37,9 @@ import {
   PrimaryButton,
   SecondaryButton,
 } from '@/components/Ui';
+import { ReportModal } from '@/components/ReportModal';
 import colorsConst from '@/constants/colors';
+import { useCreateContentReport, useBlockUser, ContentReportInputReason } from '@workspace/api-client-react';
 
 export default function ListingDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -66,6 +68,12 @@ export default function ListingDetailScreen() {
   const startConversation = useStartConversation();
   const [message, setMessage] = useState('');
   const [showMessageBox, setShowMessageBox] = useState(false);
+
+  const [showOptions, setShowOptions] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+
+  const createReport = useCreateContentReport();
+  const blockUser = useBlockUser();
 
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
@@ -111,6 +119,63 @@ export default function ListingDetailScreen() {
     queryClient.invalidateQueries();
   };
 
+  const onReport = async (reason: ContentReportInputReason, details: string) => {
+    try {
+      await createReport.mutateAsync({
+        data: {
+          targetType: 'listing',
+          reportedUserId: listing.sellerId,
+          listingId: listing.id,
+          reason,
+          details: details || null,
+        }
+      });
+      setShowReport(false);
+      Alert.alert(t.reportSuccess);
+    } catch (e) {
+      Alert.alert(t.error, errorDetail(t.error, e));
+    }
+  };
+
+  const onBlock = () => {
+    if (!isSignedIn) {
+      router.push('/sign-in');
+      return;
+    }
+    Alert.alert(t.blockConfirmTitle, t.blockConfirmText, [
+      { text: t.cancel, style: 'cancel' },
+      { text: t.blockSeller, style: 'destructive', onPress: async () => {
+        try {
+          await blockUser.mutateAsync({
+            data: {
+              userId: listing.sellerId,
+              sourceListingId: listing.id,
+            }
+          });
+          queryClient.invalidateQueries();
+          Alert.alert(t.blockSuccess);
+          router.back();
+        } catch (e) {
+          Alert.alert(t.error, errorDetail(t.error, e));
+        }
+      }}
+    ]);
+  };
+
+  const showListingOptions = () => {
+    if (!isSignedIn) {
+      router.push('/sign-in');
+      return;
+    }
+    // Simple custom ActionSheet using Alert for simplicity, or native ActionSheetIOS
+    // Actually, just Alert is fine, or custom UI. Let's use Alert.
+    Alert.alert(t.options, '', [
+      { text: t.cancel, style: 'cancel' },
+      { text: t.reportListing, onPress: () => setShowReport(true) },
+      { text: t.blockSeller, style: 'destructive', onPress: onBlock },
+    ]);
+  };
+
   const onSend = async () => {
     if (!message.trim()) return;
     try {
@@ -122,6 +187,11 @@ export default function ListingDetailScreen() {
       queryClient.invalidateQueries();
       router.push(`/conversation/${conv.id}`);
     } catch (e) {
+      if (errorStatus(e) === 422) {
+        // Surface moderation errors directly
+        Alert.alert(t.error, errorDetail(t.error, e));
+        return;
+      }
       if (errorStatus(e) === 401) {
         // Only bounce to login when Clerk actually reports signed out —
         // the API client has already retried once with a fresh token.
@@ -319,8 +389,24 @@ export default function ListingDetailScreen() {
               color={listing.isFavorited ? '#ff5a7a' : '#fff'}
             />
           </Pressable>
+          {!isOwner ? (
+            <Pressable
+              testID="listing-options-button"
+              onPress={showListingOptions}
+              style={styles.roundBtn}
+            >
+              <Feather name="more-horizontal" size={20} color="#fff" />
+            </Pressable>
+          ) : null}
         </View>
       </View>
+
+      <ReportModal
+        visible={showReport}
+        onClose={() => setShowReport(false)}
+        onSubmit={onReport}
+        loading={createReport.isPending}
+      />
 
       {!isOwner && listing.status === 'active' ? (
         <KeyboardStickyView

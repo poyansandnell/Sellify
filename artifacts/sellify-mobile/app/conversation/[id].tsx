@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
+  Alert,
   FlatList,
   Platform,
   Pressable,
@@ -20,10 +21,15 @@ import {
   useGetMessages,
   useListConversations,
   useSendMessage,
+  useCreateContentReport,
+  useBlockUser,
+  ContentReportInputReason,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { useI18n } from '@/lib/i18n';
 import colorsConst from '@/constants/colors';
+import { authFailureDebug, errorDetail, errorStatus } from '@/lib/apiError';
+import { ReportModal } from '@/components/ReportModal';
 
 export default function ConversationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -48,6 +54,10 @@ export default function ConversationScreen() {
   const sendMessage = useSendMessage();
   const [text, setText] = useState('');
 
+  const createReport = useCreateContentReport();
+  const blockUser = useBlockUser();
+  const [reportMessageId, setReportMessageId] = useState<number | null>(null);
+
   const inverted = useMemo(
     () => [...(messages ?? [])].reverse(),
     [messages],
@@ -60,9 +70,73 @@ export default function ConversationScreen() {
     try {
       await sendMessage.mutateAsync({ id: conversationId, data: { content } });
       queryClient.invalidateQueries();
-    } catch {
-      setText(content);
+    } catch (e) {
+      if (errorStatus(e) === 422) {
+        Alert.alert(t.error, errorDetail(t.error, e));
+      } else {
+        setText(content);
+      }
     }
+  };
+
+  const onBlockUser = () => {
+    if (!conversation) return;
+    const otherUserId = conversation.buyerId === userId ? conversation.sellerId : conversation.buyerId;
+
+    Alert.alert(t.blockConfirmTitle, t.blockConfirmText, [
+      { text: t.cancel, style: 'cancel' },
+      {
+        text: t.blockUser, style: 'destructive', onPress: async () => {
+          try {
+            await blockUser.mutateAsync({
+              data: {
+                userId: otherUserId,
+                sourceConversationId: conversation.id,
+              }
+            });
+            queryClient.invalidateQueries();
+            Alert.alert(t.blockSuccess);
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace('/(tabs)/messages');
+            }
+          } catch (e) {
+            Alert.alert(t.error, errorDetail(t.error, e));
+          }
+        }
+      }
+    ]);
+  };
+
+  const onReportMessage = async (reason: ContentReportInputReason, details: string) => {
+    if (!reportMessageId || !conversation) return;
+    const msg = messages?.find(m => m.id === reportMessageId);
+    if (!msg) return;
+
+    try {
+      await createReport.mutateAsync({
+        data: {
+          targetType: 'message',
+          reportedUserId: msg.senderId,
+          messageId: msg.id,
+          conversationId: conversation.id,
+          reason,
+          details: details || null,
+        }
+      });
+      setReportMessageId(null);
+      Alert.alert(t.reportSuccess);
+    } catch (e) {
+      Alert.alert(t.error, errorDetail(t.error, e));
+    }
+  };
+
+  const showMessageOptions = (msgId: number) => {
+    Alert.alert(t.options, '', [
+      { text: t.cancel, style: 'cancel' },
+      { text: t.reportMessage, onPress: () => setReportMessageId(msgId) },
+    ]);
   };
 
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
@@ -93,6 +167,16 @@ export default function ConversationScreen() {
               <Feather name="arrow-left" size={22} color={colors.foreground} />
             </Pressable>
           ),
+          headerRight: () => (
+            <Pressable
+              testID="block-conversation-user"
+              hitSlop={12}
+              onPress={onBlockUser}
+              style={{ paddingLeft: 12 }}
+            >
+              <Feather name="slash" size={20} color={colors.destructive} />
+            </Pressable>
+          ),
         }}
       />
       {conversation ? (
@@ -120,7 +204,10 @@ export default function ConversationScreen() {
         renderItem={({ item }) => {
           const mine = item.senderId === userId;
           return (
-            <View
+            <Pressable
+              testID={`message-${item.id}`}
+              onLongPress={() => !mine && showMessageOptions(item.id)}
+              delayLongPress={300}
               style={[
                 styles.bubble,
                 mine
@@ -141,7 +228,7 @@ export default function ConversationScreen() {
               >
                 {item.content}
               </Text>
-            </View>
+            </Pressable>
           );
         }}
       />
@@ -186,6 +273,13 @@ export default function ConversationScreen() {
           <Feather name="send" size={18} color={colors.primaryForeground} />
         </Pressable>
       </View>
+
+      <ReportModal
+        visible={!!reportMessageId}
+        onClose={() => setReportMessageId(null)}
+        onSubmit={onReportMessage}
+        loading={createReport.isPending}
+      />
     </KeyboardAvoidingView>
   );
 }

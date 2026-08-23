@@ -24,6 +24,8 @@ tags:
     description: Public seller profiles
   - name: Storage
     description: Object storage upload and serving endpoints.
+  - name: moderation
+    description: Safety, blocking and moderator operations
 paths:
   /healthz:
     get:
@@ -597,6 +599,138 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+  /me/terms:
+    get:
+      operationId: getTermsAcceptance
+      tags: [me]
+      responses:
+        "200":
+          description: Current terms acceptance
+          content: { application/json: { schema: { $ref: "#/components/schemas/TermsAcceptance" } } }
+    post:
+      operationId: acceptTerms
+      tags: [me]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/TermsAcceptanceInput" } } }
+      responses:
+        "200":
+          description: Accepted terms
+          content: { application/json: { schema: { $ref: "#/components/schemas/TermsAcceptance" } } }
+  /me/reports:
+    post:
+      operationId: createContentReport
+      tags: [moderation]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ContentReportInput" } } }
+      responses:
+        "201":
+          description: Created report
+          content: { application/json: { schema: { $ref: "#/components/schemas/ContentReport" } } }
+  /me/blocks:
+    get:
+      operationId: listMyBlocks
+      tags: [moderation]
+      responses:
+        "200":
+          description: Current user's blocks
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/UserBlock" } } } }
+    post:
+      operationId: blockUser
+      tags: [moderation]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/UserBlockInput" } } }
+      responses:
+        "201":
+          description: Block created
+          content: { application/json: { schema: { $ref: "#/components/schemas/UserBlock" } } }
+  /me/blocks/{userId}:
+    delete:
+      operationId: unblockUser
+      tags: [moderation]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204": { description: Unblocked }
+  /moderation/reports:
+    get:
+      operationId: listModerationReports
+      tags: [moderation]
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [open, in_review, resolved, dismissed] }
+      responses:
+        "200":
+          description: Reports
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/ContentReport" } } } }
+  /moderation/reports/{id}:
+    patch:
+      operationId: updateModerationReport
+      tags: [moderation]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ContentReportUpdate" } } }
+      responses:
+        "200":
+          description: Updated report
+          content: { application/json: { schema: { $ref: "#/components/schemas/ContentReport" } } }
+  /moderation/events:
+    get:
+      operationId: listModerationEvents
+      tags: [moderation]
+      responses:
+        "200":
+          description: Moderation audit events
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/ModerationEvent" } } } }
+  /moderation/listings/{id}/remove:
+    post:
+      operationId: removeModerationListing
+      tags: [moderation]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ModerationReasonInput" } } }
+      responses:
+        "204": { description: Listing removed }
+  /moderation/users/{id}/suspend:
+    post:
+      operationId: suspendModerationUser
+      tags: [moderation]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ModerationReasonInput" } } }
+      responses:
+        "204": { description: User suspended }
+    delete:
+      operationId: unsuspendModerationUser
+      tags: [moderation]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204": { description: User unsuspended }
 components:
   schemas:
     HealthStatus:
@@ -611,6 +745,8 @@ components:
       required: [error]
       properties:
         error:
+          type: string
+        code:
           type: string
     Category:
       type: object
@@ -889,7 +1025,7 @@ components:
           description: Short follow-up questions to the seller that would improve the listing.
     Profile:
       type: object
-      required: [id, displayName, memberSince]
+      required: [id, displayName, memberSince, isModerator]
       properties:
         id: { type: string }
         displayName: { type: string }
@@ -898,6 +1034,7 @@ components:
         country: { type: ["string", "null"] }
         language: { type: ["string", "null"] }
         currency: { type: ["string", "null"] }
+        isModerator: { type: boolean }
         memberSince: { type: string }
         activeListingCount: { type: integer }
         soldListingCount: { type: integer }
@@ -1011,3 +1148,95 @@ components:
           type: string
         metadata:
           $ref: "#/components/schemas/UploadUrlRequest"
+    TermsAcceptance:
+      type: object
+      required: [currentVersion, acceptedVersion, acceptedAt]
+      properties:
+        currentVersion: { type: string }
+        acceptedVersion: { type: ["string", "null"] }
+        acceptedAt: { type: ["string", "null"] }
+    TermsAcceptanceInput:
+      type: object
+      required: [version]
+      properties:
+        version: { type: string }
+    UserBlock:
+      type: object
+      required: [id, blockedUserId, createdAt]
+      properties:
+        id: { type: integer }
+        blockedUserId: { type: string }
+        sourceListingId: { type: ["integer", "null"] }
+        sourceConversationId: { type: ["integer", "null"] }
+        createdAt: { type: string }
+    UserBlockInput:
+      type: object
+      required: [userId]
+      properties:
+        userId: { type: string, minLength: 1 }
+        sourceListingId: { type: ["integer", "null"] }
+        sourceConversationId: { type: ["integer", "null"] }
+        details: { type: ["string", "null"], maxLength: 1000 }
+    ContentReportInput:
+      type: object
+      required: [reportedUserId, targetType, reason]
+      properties:
+        reportedUserId: { type: string, minLength: 1 }
+        targetType: { type: string, enum: [listing, user, message] }
+        listingId: { type: ["integer", "null"] }
+        messageId: { type: ["integer", "null"] }
+        conversationId: { type: ["integer", "null"] }
+        reason: { type: string, enum: [inappropriate, fraud, prohibited_item, spam, harassment, other, blocked_user] }
+        details: { type: ["string", "null"], maxLength: 2000 }
+    ContentReport:
+      type: object
+      required: [id, reporterId, reportedUserId, targetType, reason, status, createdAt, dueAt, updatedAt, overdue]
+      properties:
+        id: { type: integer }
+        reporterId: { type: string }
+        reportedUserId: { type: string }
+        targetType: { type: string, enum: [listing, user, message, block] }
+        listingId: { type: ["integer", "null"] }
+        messageId: { type: ["integer", "null"] }
+        conversationId: { type: ["integer", "null"] }
+        reason: { type: string, enum: [inappropriate, fraud, prohibited_item, spam, harassment, other, blocked_user] }
+        details: { type: ["string", "null"] }
+        status: { type: string, enum: [open, in_review, resolved, dismissed] }
+        createdAt: { type: string }
+        dueAt: { type: string }
+        updatedAt: { type: string }
+        resolvedAt: { type: ["string", "null"] }
+        resolvedBy: { type: ["string", "null"] }
+        moderatorNotes: { type: ["string", "null"] }
+        moderatorActions: { type: array, items: { type: string } }
+        overdue: { type: boolean }
+        reporterName: { type: ["string", "null"] }
+        reportedUserName: { type: ["string", "null"] }
+        listingTitle: { type: ["string", "null"] }
+    ContentReportUpdate:
+      type: object
+      properties:
+        status: { type: string, enum: [open, in_review, resolved, dismissed] }
+        moderatorNotes: { type: ["string", "null"], maxLength: 4000 }
+        moderatorActions: { type: array, items: { type: string } }
+    ModerationReasonInput:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string, minLength: 1, maxLength: 1000 }
+    ModerationEvent:
+      type: object
+      required: [id, eventType, createdAt]
+      properties:
+        id: { type: integer }
+        actorId: { type: ["string", "null"] }
+        eventType: { type: string }
+        targetUserId: { type: ["string", "null"] }
+        listingId: { type: ["integer", "null"] }
+        reportId: { type: ["integer", "null"] }
+        conversationId: { type: ["integer", "null"] }
+        metadata: { type: object, additionalProperties: true }
+        createdAt: { type: string }
+        actorName: { type: ["string", "null"] }
+        targetUserName: { type: ["string", "null"] }
+        listingTitle: { type: ["string", "null"] }

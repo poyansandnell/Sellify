@@ -24,6 +24,9 @@ import Profile from '@/pages/profile';
 import Search from '@/pages/search';
 import Privacy from '@/pages/privacy';
 import Terms from '@/pages/terms';
+import Support from '@/pages/support';
+import Moderation from '@/pages/moderation';
+import { TermsGate } from '@/components/layout/TermsGate';
 
 import { publishableKeyFromHost } from '@clerk/react/internal';
 
@@ -53,14 +56,16 @@ function AppShell() {
         <Route path="/search" component={Search} />
         <Route path="/privacy" component={Privacy} />
         <Route path="/terms" component={Terms} />
-        
+        <Route path="/support" component={Support} />
+
         <Route path="/sell"><ProtectedRoute><Sell /></ProtectedRoute></Route>
         <Route path="/messages"><ProtectedRoute><Messages /></ProtectedRoute></Route>
         <Route path="/messages/:id"><ProtectedRoute><Thread /></ProtectedRoute></Route>
         <Route path="/my-listings"><ProtectedRoute><MyListings /></ProtectedRoute></Route>
         <Route path="/favorites"><ProtectedRoute><Favorites /></ProtectedRoute></Route>
         <Route path="/profile"><ProtectedRoute><Profile /></ProtectedRoute></Route>
-        
+        <Route path="/moderation"><ProtectedRoute><Moderation /></ProtectedRoute></Route>
+
         <Route component={NotFound} />
       </Switch>
     </Navigation>
@@ -70,7 +75,11 @@ function AppShell() {
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <Show when="signed-in">{children}</Show>
+      <Show when="signed-in">
+        <TermsGate>
+          {children}
+        </TermsGate>
+      </Show>
       <Show when="signed-out"><Redirect to="/sign-in" /></Show>
     </>
   );
@@ -82,8 +91,8 @@ function App() {
   const proxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 
   return (
-    <ClerkProvider 
-      publishableKey={clerkPubKey} 
+    <ClerkProvider
+      publishableKey={clerkPubKey}
       proxyUrl={proxyUrl}
       localization={{
         signIn: { start: { title: "Logga in till Sellify", subtitle: "Köp och sälj enkelt" } },

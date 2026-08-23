@@ -7,6 +7,7 @@ import meRouter from "./me";
 import conversationsRouter from "./conversations";
 import marketplaceRouter from "./marketplace";
 import aiRouter from "./ai";
+import moderationRouter from "./moderation";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(meRouter);
 router.use(conversationsRouter);
 router.use(marketplaceRouter);
 router.use(aiRouter);
+router.use(moderationRouter);
 
 export default router;

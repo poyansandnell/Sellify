@@ -6,7 +6,4 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface ErrorEnvelope {
-  error: string;
-  code?: string;
-}
+export type ModerationEventMetadata = { [key: string]: unknown };
