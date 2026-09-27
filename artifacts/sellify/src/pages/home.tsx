@@ -3,7 +3,10 @@ import { useListCategories, useGetHomeFeed } from '@workspace/api-client-react';
 import { Search, MapPin, Clock, Heart } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { formatCurrency, formatRelativeTime, joinApi } from '@/lib/utils';
+import { setSeoMetadata } from '@/lib/seo';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AppDownloadCta } from '@/components/AppDownloadCta';
+import { useEffect } from 'react';
 
 export default function Home() {
   const { t, language } = useI18n();
@@ -11,6 +14,20 @@ export default function Home() {
 
   const { data: categories, isLoading: isLoadingCats } = useListCategories();
   const { data: feed, isLoading: isLoadingFeed } = useGetHomeFeed();
+
+  useEffect(() => {
+    const isSwedish = language === 'sv';
+    document.documentElement.lang = isSwedish ? 'sv' : 'en';
+    setSeoMetadata({
+      title: isSwedish
+        ? 'Köp och sälj begagnat nära dig | Sellify'
+        : 'Buy and sell second-hand near you | Sellify',
+      description: isSwedish
+        ? 'Köp och sälj begagnat på Sellify. Hitta saker nära dig, upptäck aktuella annonser och kontakta säljare direkt.'
+        : 'Buy and sell second-hand on Sellify. Find items nearby, browse current listings and contact sellers directly.',
+      canonical: `${window.location.origin}/`,
+    });
+  }, [language]);
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -36,6 +53,8 @@ export default function Home() {
         </form>
       </div>
 
+      <AppDownloadCta language={language} />
+
       {/* Categories */}
       <div>
         <h2 className="text-xl font-display font-bold mb-4">{t.home.categories}</h2>
@@ -45,9 +64,9 @@ export default function Home() {
               <Skeleton key={i} className="h-10 w-24 rounded-full flex-shrink-0" />
             ))
           ) : categories?.map(cat => (
-            <Link key={cat.id} href={`/search?category=${cat.id}`} className="flex-shrink-0 px-5 py-2.5 rounded-full bg-card border border-border hover:border-primary hover:bg-primary/5 transition-colors font-medium whitespace-nowrap text-sm shadow-sm">
+            <a key={cat.id} href={`/category/${cat.slug}`} className="flex-shrink-0 px-5 py-2.5 rounded-full bg-card border border-border hover:border-primary hover:bg-primary/5 transition-colors font-medium whitespace-nowrap text-sm shadow-sm">
               {language === 'en' ? cat.nameEn : cat.nameSv}
-            </Link>
+            </a>
           ))}
         </div>
       </div>

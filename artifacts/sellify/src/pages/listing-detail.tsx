@@ -3,6 +3,7 @@ import { useGetListingBySlug, useGetSimilarListings, getGetListingBySlugQueryKey
 import { MapPin, Heart, MessageSquare, ChevronLeft, Flag, Info, Truck, ShieldAlert } from 'lucide-react';
 import { useRoute, Link, useLocation } from 'wouter';
 import { formatCurrency, formatRelativeTime, joinApi } from '@/lib/utils';
+import { setSeoMetadata } from '@/lib/seo';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -22,9 +23,35 @@ export default function ListingDetail() {
 
   useEffect(() => {
     if (listing) {
-      document.title = `${listing.title} - Sellify`;
+      const descriptionText = (
+        listing.seoDescription ||
+        listing.shortDescription ||
+        listing.description ||
+        ''
+      ).replace(/\s+/g, ' ').trim();
+      const priceText = formatCurrency(
+        listing.price,
+        listing.currency,
+        language === 'sv' ? 'sv-SE' : 'en-US',
+      );
+      const description = `${descriptionText} ${priceText}${listing.city ? ` · ${listing.city}` : ''}`
+        .trim()
+        .slice(0, 160);
+      const title = `${listing.seoTitle || listing.title} · ${listing.city || 'Sverige'} | Sellify #${listing.id}`
+        .slice(0, 68)
+        .trim();
+      const image = listing.images?.[0] ? joinApi(listing.images[0]) : undefined;
+
+      document.documentElement.lang = language === 'sv' ? 'sv' : 'en';
+      setSeoMetadata({
+        title,
+        description,
+        canonical: `${window.location.origin}/listing/${encodeURIComponent(listing.slug)}`,
+        robots: listing.status === 'active' ? 'index, follow' : 'noindex, follow',
+        image,
+      });
     }
-  }, [listing]);
+  }, [listing, language]);
 
   if (isLoading) {
     return <div className="p-4 max-w-4xl mx-auto"><Skeleton className="aspect-square w-full rounded-3xl" /></div>;

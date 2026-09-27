@@ -9,6 +9,7 @@ import {
   getClerkProxyHost,
 } from "./middlewares/clerkProxyMiddleware";
 import router from "./routes";
+import seoRouter from "./routes/seo";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
@@ -49,5 +50,6 @@ app.use(
 );
 
 app.use("/api", router);
+app.use(seoRouter);
 
 export default app;

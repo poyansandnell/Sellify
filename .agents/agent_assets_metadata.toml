@@ -6,48 +6,56 @@ id = "a02xbfg42n0P8ayGVZBVE"
 uri = "file://attached_assets/store/out/sellify-app-store-bilder.zip"
 type = "unspecified"
 title = "App Store-bilder (iPhone + iPad, sv + en)"
+logical_id = "09e15c61-21df-4b35-a7cb-c0fb1676311f"
 
 [[outputs]]
 id = "G9sx_Cyj1q5fAc0Yrlm47"
 uri = "file://attached_assets/store/out/iphone-home-sv.png"
 type = "image"
 title = "Exempel: iPhone 6,5\" (1242×2688)"
+logical_id = "cfe38794-be13-4727-9a30-b3eefe3ce763"
 
 [[outputs]]
 id = "fcHAY1t8-bL2SSZgpPqvD"
 uri = "file://attached_assets/store/out/ipad-home-sv.png"
 type = "image"
 title = "Exempel: iPad 13\" (2048×2732)"
+logical_id = "0667d263-d332-4723-8d38-7d23c96d111a"
 
 [[outputs]]
 id = "UQ7X8QtGXuXVAml4G7bBR"
 uri = "file://attached_assets/store/sellify-lanseringspaket.zip"
 type = "unspecified"
 title = "Sellify lanseringspaket – ny zip med uppdaterade engelska bilder"
+logical_id = "4b39791a-5429-4c43-b7de-3af1651f1261"
 
 [[outputs]]
 id = "atKQZu6xOFGsSAGFAhT9w"
 uri = "file://attached_assets/store/expo-qr.png"
 type = "image"
 title = "QR-kod – öppna Sellify i Expo Go"
+logical_id = "46174ccb-ebdf-4401-8693-6788180d1ad8"
 
 [[outputs]]
 id = "3ungHFu5urmhK2u1D95-U"
 uri = "file://attached_assets/store/out/iphone-01-en.png"
 type = "image"
 title = "iPhone – Home (EN)"
+logical_id = "367d3504-b147-4385-ba9e-e824b79087ef"
 
 [[outputs]]
 id = "el7dF33ZZ2HsujZfn18y3"
 uri = "file://attached_assets/store/out/iphone-02-en.png"
 type = "image"
 title = "iPhone – Listing (EN)"
+logical_id = "6951a902-68af-490b-b5af-a6dcbd4ae076"
 
 [[outputs]]
 id = "2UypVyc3lm3PwQyslaKH8"
 uri = "file://attached_assets/store/out/iphone-03-en.png"
 type = "image"
 title = "iPhone – Search (EN)"
+logical_id = "252322ac-7e83-442c-9f0d-af9ed0361d52"
 
 [[outputs]]
 id = "6EaqUkphzRC1FZ_QDdQQD"
@@ -55,6 +63,7 @@ uri = "file://screenshots/appstore/sellify-appstore-bilder.zip"
 type = "unspecified"
 title = "Alla App Store-bilder (ZIP, uppdaterad)"
 description = "Alla 12 bilder med den nya hem-skärmbilden."
+logical_id = "a43601d7-665f-4be9-af00-7f3d3c669c47"
 
 [[outputs]]
 id = "Mpdmft0A21TjmGmZ-s2Zb"
@@ -62,6 +71,7 @@ uri = "file://screenshots/appstore/iphone-sv-1-hem.jpg"
 type = "image"
 title = "iPhone SV 1 – Hem (1284×2778)"
 description = "Fynda second hand i hela Sverige"
+logical_id = "120ffb6c-12ca-42ce-857a-1673631118b6"
 
 [[outputs]]
 id = "GG3M64EHw36bOSCMsYad0"
@@ -69,6 +79,7 @@ uri = "file://screenshots/appstore/iphone-sv-2-ai.jpg"
 type = "image"
 title = "iPhone SV 2 – Sälj med AI (1284×2778)"
 description = "Fota. Klart. AI:n skriver annonsen."
+logical_id = "677f7a72-da93-449c-b773-0d5088c6b626"
 
 [[outputs]]
 id = "G-q4bNs0oZwIwGBgd9m3L"
@@ -76,6 +87,7 @@ uri = "file://screenshots/appstore/iphone-sv-3-annons.jpg"
 type = "image"
 title = "iPhone SV 3 – Annons (1284×2778)"
 description = "Sälj snabbare med proffsiga annonser"
+logical_id = "70c66d31-69c1-46de-9e89-0047e6d0fc5f"
 
 [[outputs]]
 id = "geVl3OUxAH1J4MXn93lMR"
@@ -83,6 +95,7 @@ uri = "file://screenshots/appstore/iphone-en-1-home.jpg"
 type = "image"
 title = "iPhone EN 1 – Home (uppdaterad, 1284×2778)"
 description = "Ny version utan ölburken."
+logical_id = "54ceb22c-bff6-4f69-8c49-102575c672cb"
 
 [[outputs]]
 id = "A5fnKe5zJ6btDG5__Am0y"
@@ -90,6 +103,7 @@ uri = "file://screenshots/appstore/iphone-en-2-ai.jpg"
 type = "image"
 title = "iPhone EN 2 – Sell with AI (1284×2778)"
 description = "Snap a photo. AI writes your listing."
+logical_id = "6d5238eb-3182-465f-a1f7-343171c9d023"
 
 [[outputs]]
 id = "7hnfsPcxyqEXdJnm_aKls"
@@ -97,6 +111,7 @@ uri = "file://screenshots/appstore/iphone-en-3-listing.jpg"
 type = "image"
 title = "iPhone EN 3 – Listing (1284×2778)"
 description = "Sell faster with pro-quality listings"
+logical_id = "a95ca5d1-a0a8-44c1-8596-2da1c3a57212"
 
 [[outputs]]
 id = "JvNSzRIXwr0GW4KsQd47U"
@@ -104,6 +119,7 @@ uri = "file://screenshots/appstore/ipad-sv-1-hem.jpg"
 type = "image"
 title = "iPad SV 1 – Hem"
 description = "Fynda second hand i hela Sverige (2048×2732)"
+logical_id = "531ebe5d-cd95-43a6-8cec-27889fde87da"
 
 [[outputs]]
 id = "svJAfIF2BioyML0QME6MW"
@@ -111,6 +127,7 @@ uri = "file://screenshots/appstore/ipad-sv-2-ai.jpg"
 type = "image"
 title = "iPad SV 2 – Sälj med AI"
 description = "Fota. Klart. AI:n skriver annonsen. (2048×2732)"
+logical_id = "ff81cdb8-c715-4f25-9555-d7ad89b57b4b"
 
 [[outputs]]
 id = "XvgD_uYOzFLv-FbXf-X4X"
@@ -118,6 +135,7 @@ uri = "file://screenshots/appstore/ipad-sv-3-annons.jpg"
 type = "image"
 title = "iPad SV 3 – Annons"
 description = "Sälj snabbare med proffsiga annonser (2048×2732)"
+logical_id = "6f3acfb3-a47e-4f9e-9844-0fc9b2a988e3"
 
 [[outputs]]
 id = "UGgjOJ-CAnAp0YWNzjqw1"
@@ -125,6 +143,7 @@ uri = "file://screenshots/appstore/ipad-en-1-home.jpg"
 type = "image"
 title = "iPad EN 1 – Home (uppdaterad, 2048×2732)"
 description = "Ny version utan ölburken."
+logical_id = "dbed9187-d0a3-40aa-8b23-945074a45602"
 
 [[outputs]]
 id = "AOciAjxraPPNUNR9D3bD7"
@@ -132,6 +151,7 @@ uri = "file://screenshots/appstore/ipad-en-2-ai.jpg"
 type = "image"
 title = "iPad EN 2 – Sell with AI"
 description = "Snap a photo. AI writes your listing. (2048×2732)"
+logical_id = "eb824fcb-2132-45f3-a36a-cdf907dbcb66"
 
 [[outputs]]
 id = "GFIUCsiGJK0k13930YKT8"
@@ -139,6 +159,7 @@ uri = "file://screenshots/appstore/ipad-en-3-listing.jpg"
 type = "image"
 title = "iPad EN 3 – Listing"
 description = "Sell faster with pro-quality listings (2048×2732)"
+logical_id = "120f7523-df21-4a11-b1ab-0436651b3d50"
 
 [[outputs]]
 id = "WTbI2ocitzvPY3fUoOiI3"
@@ -146,6 +167,7 @@ uri = "file://attached_assets/generated_images/sellify-icon-concept-1.png"
 type = "image"
 title = "Förslag 1 – Sammanflätat S"
 description = "Två band i lila och blått formar en tydlig, egen Sellify-symbol. Mitt rekommenderade alternativ."
+logical_id = "056ce206-f10c-4992-bbf8-05054a40b389"
 
 [[outputs]]
 id = "MfRMxGTusjSRLxw59ignG"
@@ -153,6 +175,7 @@ uri = "file://attached_assets/generated_images/sellify-icon-concept-2.png"
 type = "image"
 title = "Förslag 2 – Köp och sälj"
 description = "Två överlappande annonskort symboliserar marknadsplatsen och ett tryggt byte."
+logical_id = "585dca58-5584-4f86-a304-5b74b842bd71"
 
 [[outputs]]
 id = "GnLWj4IDCSdFhsJfCha8W"
@@ -160,6 +183,7 @@ uri = "file://attached_assets/generated_images/sellify-icon-concept-3.png"
 type = "image"
 title = "Förslag 3 – Marknadsplatsens portal"
 description = "En välkomnande, abstrakt port med en väg in mot nya fynd."
+logical_id = "e9be560a-81c7-435f-8412-058dd306544a"
 
 [[outputs]]
 id = "FqW35Vhqac9pMgQyCsYQh"
@@ -167,3 +191,4 @@ uri = "file://attached_assets/generated_images/sellify-icon-concept-4.png"
 type = "image"
 title = "Förslag 4 – Cirkulärt flöde"
 description = "En kompakt symbol för återbruk, rörelse och cirkulär handel."
+logical_id = "22f54db3-45a6-4fe7-ab10-7167ab1f5a21"
