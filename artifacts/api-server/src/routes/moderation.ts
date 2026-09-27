@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { and, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@workspace/db";
 import {
   conversations,
@@ -14,6 +14,7 @@ import {
   AcceptTermsBody,
   BlockUserBody,
   CreateContentReportBody,
+  ListSeoLocationNodesResponse,
   RemoveModerationListingBody,
   SuspendModerationUserBody,
   UpdateModerationReportBody,
@@ -21,6 +22,7 @@ import {
 import { requireAuth, requireAuthAllowUnacceptedTerms, type AuthedRequest } from "../lib/auth";
 import { ensureProfile } from "../lib/profile";
 import { CURRENT_TERMS_VERSION } from "../lib/terms";
+import { getLocationSitemapPath } from "../lib/seo-sitemap";
 
 const router: IRouter = Router();
 const userId = (req: Request) => (req as AuthedRequest).userId;
@@ -175,6 +177,33 @@ router.patch("/moderation/reports/:id", requireAuth, async (req: Request, res: R
   });
   if (!row) { res.status(404).json({ error: "Report not found" }); return; }
   res.json(await reportContext(row));
+});
+router.get("/moderation/seo-locations", requireAuth, async (req: Request, res: Response) => {
+  if (!(await requireModerator(req, res))) return;
+  const rows = await db
+    .select({
+      country: listings.country,
+      region: listings.region,
+      city: listings.city,
+      listingCount: sql<number>`count(*)::int`,
+    })
+    .from(listings)
+    .leftJoin(profiles, eq(profiles.id, listings.sellerId))
+    .where(
+      and(
+        eq(listings.status, "active"),
+        isNull(listings.removedAt),
+        isNull(profiles.suspendedAt),
+        sql`trim(${listings.city}) <> ''`,
+      ),
+    )
+    .groupBy(listings.country, listings.region, listings.city)
+    .orderBy(asc(listings.country), asc(listings.region), asc(listings.city));
+  const nodes = rows.map((row) => ({
+    ...row,
+    path: getLocationSitemapPath(row.country, row.region, row.city),
+  }));
+  res.json(ListSeoLocationNodesResponse.parse(nodes));
 });
 router.get("/moderation/events", requireAuth, async (req: Request, res: Response) => {
   if (!(await requireModerator(req, res))) return;

@@ -705,6 +705,26 @@ paths:
         "200":
           description: Moderation audit events
           content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/ModerationEvent" } } } }
+  /moderation/seo-locations:
+    get:
+      operationId: listSeoLocationNodes
+      tags: [moderation]
+      summary: List indexable location pages (moderator only)
+      responses:
+        "200":
+          description: Active locality SEO pages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SeoLocationNode"
+        "401":
+          description: Unauthorized
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } }
+        "403":
+          description: Moderator access required
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } }
   /moderation/listings/{id}/remove:
     post:
       operationId: removeModerationListing
@@ -1276,3 +1296,12 @@ components:
         actorName: { type: ["string", "null"] }
         targetUserName: { type: ["string", "null"] }
         listingTitle: { type: ["string", "null"] }
+    SeoLocationNode:
+      type: object
+      required: [country, region, city, listingCount, path]
+      properties:
+        country: { type: string, minLength: 2, maxLength: 2 }
+        region: { type: ["string", "null"] }
+        city: { type: string }
+        listingCount: { type: integer, minimum: 1 }
+        path: { type: string }

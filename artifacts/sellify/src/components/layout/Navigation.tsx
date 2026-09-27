@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'wouter';
-import { Home, PlusCircle, MessageSquare, List, User, Shield } from 'lucide-react';
+import { Home, PlusCircle, MessageSquare, List, User, Shield, MapPin } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { useUser, Show } from '@clerk/react';
 import { cn } from '@/lib/utils';
@@ -22,6 +22,7 @@ export function Navigation({ children }: { children: React.ReactNode }) {
 
   if (me?.isModerator) {
     navItems.push({ href: '/moderation', label: 'Moderation', icon: Shield });
+    navItems.push({ href: '/admin/seo', label: 'SEO', icon: MapPin });
   }
 
   return (

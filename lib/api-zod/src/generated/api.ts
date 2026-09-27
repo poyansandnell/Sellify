@@ -1394,6 +1394,25 @@ export const ListModerationEventsResponseItem = zod.object({
 export const ListModerationEventsResponse = zod.array(ListModerationEventsResponseItem)
 
 
+/**
+ * @summary List indexable location pages (moderator only)
+ */
+export const listSeoLocationNodesResponseCountryMin = 2;
+export const listSeoLocationNodesResponseCountryMax = 2;
+
+
+
+
+export const ListSeoLocationNodesResponseItem = zod.object({
+  "country": zod.string().min(listSeoLocationNodesResponseCountryMin).max(listSeoLocationNodesResponseCountryMax),
+  "region": zod.string().nullable(),
+  "city": zod.string(),
+  "listingCount": zod.number().min(1),
+  "path": zod.string()
+})
+export const ListSeoLocationNodesResponse = zod.array(ListSeoLocationNodesResponseItem)
+
+
 export const RemoveModerationListingParams = zod.object({
   "id": zod.coerce.number()
 })

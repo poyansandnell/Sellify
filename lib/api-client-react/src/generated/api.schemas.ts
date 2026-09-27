@@ -736,6 +736,20 @@ export interface ModerationEvent {
   listingTitle?: string | null;
 }
 
+export interface SeoLocationNode {
+  /**
+     * @minLength 2
+     * @maxLength 2
+     */
+  country: string;
+  /** @nullable */
+  region: string | null;
+  city: string;
+  /** @minimum 1 */
+  listingCount: number;
+  path: string;
+}
+
 export type ListListingsParams = {
 q?: string;
 categoryId?: number;

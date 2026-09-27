@@ -26,6 +26,7 @@ import Privacy from '@/pages/privacy';
 import Terms from '@/pages/terms';
 import Support from '@/pages/support';
 import Moderation from '@/pages/moderation';
+import AdminSeo from '@/pages/admin-seo';
 import { TermsGate } from '@/components/layout/TermsGate';
 
 import { publishableKeyFromHost } from '@clerk/react/internal';
@@ -64,6 +65,7 @@ function AppShell() {
         <Route path="/my-listings"><ProtectedRoute><MyListings /></ProtectedRoute></Route>
         <Route path="/favorites"><ProtectedRoute><Favorites /></ProtectedRoute></Route>
         <Route path="/profile"><ProtectedRoute><Profile /></ProtectedRoute></Route>
+        <Route path="/admin/seo"><ProtectedRoute><AdminSeo /></ProtectedRoute></Route>
         <Route path="/moderation"><ProtectedRoute><Moderation /></ProtectedRoute></Route>
 
         <Route component={NotFound} />

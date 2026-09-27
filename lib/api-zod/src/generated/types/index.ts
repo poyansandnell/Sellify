@@ -59,6 +59,7 @@ export * from './profile';
 export * from './profileUpdate';
 export * from './pushTokenInput';
 export * from './sellerPublic';
+export * from './seoLocationNode';
 export * from './specification';
 export * from './termsAcceptance';
 export * from './termsAcceptanceInput';

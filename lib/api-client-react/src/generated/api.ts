@@ -52,6 +52,7 @@ import type {
   ProfileUpdate,
   PushTokenInput,
   SellerPublic,
+  SeoLocationNode,
   TermsAcceptance,
   TermsAcceptanceInput,
   UploadUrlRequest,
@@ -2929,6 +2930,83 @@ export function useListModerationEvents<TData = Awaited<ReturnType<typeof listMo
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListModerationEventsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListSeoLocationNodesUrl = () => {
+
+
+
+
+  return `/api/moderation/seo-locations`
+}
+
+/**
+ * @summary List indexable location pages (moderator only)
+ */
+export const listSeoLocationNodes = async ( options?: RequestInit): Promise<SeoLocationNode[]> => {
+
+  return customFetch<SeoLocationNode[]>(getListSeoLocationNodesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSeoLocationNodesQueryKey = () => {
+    return [
+    `/api/moderation/seo-locations`
+    ] as const;
+    }
+
+
+export const getListSeoLocationNodesQueryOptions = <TData = Awaited<ReturnType<typeof listSeoLocationNodes>>, TError = ErrorType<ErrorEnvelope>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSeoLocationNodes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSeoLocationNodesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSeoLocationNodes>>> = ({ signal }) => listSeoLocationNodes({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSeoLocationNodes>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSeoLocationNodesQueryResult = NonNullable<Awaited<ReturnType<typeof listSeoLocationNodes>>>
+export type ListSeoLocationNodesQueryError = ErrorType<ErrorEnvelope>
+
+
+/**
+ * @summary List indexable location pages (moderator only)
+ */
+
+export function useListSeoLocationNodes<TData = Awaited<ReturnType<typeof listSeoLocationNodes>>, TError = ErrorType<ErrorEnvelope>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSeoLocationNodes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSeoLocationNodesQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
