@@ -6,6 +6,10 @@ type SeoMetadata = {
   image?: string;
 };
 
+export const SELLIFY_CANONICAL_ORIGIN = (
+  import.meta.env.VITE_SELLIFY_SITE_ORIGIN || 'https://sellifyai.sale'
+).replace(/\/+$/, '');
+
 function setMeta(attribute: 'name' | 'property', key: string, content: string) {
   let element = document.head.querySelector<HTMLMetaElement>(
     `meta[${attribute}="${key}"]`,

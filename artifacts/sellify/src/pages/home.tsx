@@ -3,7 +3,7 @@ import { useListCategories, useGetHomeFeed } from '@workspace/api-client-react';
 import { Search, MapPin, Clock, Heart } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { formatCurrency, formatRelativeTime, joinApi } from '@/lib/utils';
-import { setSeoMetadata } from '@/lib/seo';
+import { setSeoMetadata, SELLIFY_CANONICAL_ORIGIN } from '@/lib/seo';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AppDownloadCta } from '@/components/AppDownloadCta';
 import { useEffect } from 'react';
@@ -25,7 +25,7 @@ export default function Home() {
       description: isSwedish
         ? 'Köp och sälj begagnat på Sellify. Hitta saker nära dig, upptäck aktuella annonser och kontakta säljare direkt.'
         : 'Buy and sell second-hand on Sellify. Find items nearby, browse current listings and contact sellers directly.',
-      canonical: `${import.meta.env.VITE_SELLIFY_SITE_ORIGIN || 'https://sellifyai.sale'}/`,
+      canonical: `${SELLIFY_CANONICAL_ORIGIN}/`,
     });
   }, [language]);
 

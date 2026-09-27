@@ -1,9 +1,9 @@
 import { useI18n } from '@/lib/i18n';
-import { useGetListingBySlug, useGetSimilarListings, getGetListingBySlugQueryKey, getGetSimilarListingsQueryKey } from '@workspace/api-client-react';
+import { ApiError, useGetListingBySlug, useGetSimilarListings, getGetListingBySlugQueryKey, getGetSimilarListingsQueryKey } from '@workspace/api-client-react';
 import { MapPin, Heart, MessageSquare, ChevronLeft, Flag, Info, Truck, ShieldAlert } from 'lucide-react';
 import { useRoute, Link, useLocation } from 'wouter';
 import { formatCurrency, formatRelativeTime, joinApi } from '@/lib/utils';
-import { setSeoMetadata } from '@/lib/seo';
+import { setSeoMetadata, SELLIFY_CANONICAL_ORIGIN } from '@/lib/seo';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -18,7 +18,13 @@ export default function ListingDetail() {
   const slug = params?.slug || '';
   const queryClient = useQueryClient();
 
-  const { data: listing, isLoading } = useGetListingBySlug(slug, { query: { enabled: !!slug, queryKey: getGetListingBySlugQueryKey(slug) } });
+  const {
+    data: listing,
+    isLoading,
+    isFetching,
+    error: listingError,
+    refetch: refetchListing,
+  } = useGetListingBySlug(slug, { query: { enabled: !!slug, queryKey: getGetListingBySlugQueryKey(slug) } });
   const { data: similar } = useGetSimilarListings(listing?.id ?? 0, { query: { enabled: !!listing?.id, queryKey: getGetSimilarListingsQueryKey(listing?.id ?? 0) } });
 
   useEffect(() => {
@@ -46,36 +52,86 @@ export default function ListingDetail() {
       setSeoMetadata({
         title,
         description,
-        canonical: `${window.location.origin}/listing/${encodeURIComponent(listing.slug)}`,
+        canonical: `${SELLIFY_CANONICAL_ORIGIN}/listing/${encodeURIComponent(listing.slug)}`,
         robots: listing.status === 'active' ? 'index, follow' : 'noindex, follow',
         image,
       });
+      return;
     }
-  }, [listing, language]);
 
-  if (isLoading) {
+    if (listingError) {
+      const isUnavailable = listingError instanceof ApiError && listingError.status === 404;
+      const isSwedish = language === 'sv';
+      document.documentElement.lang = isSwedish ? 'sv' : 'en';
+      setSeoMetadata({
+        title: isUnavailable
+          ? isSwedish
+            ? 'Annonsen är såld eller inte längre tillgänglig | Sellify'
+            : 'Listing sold or unavailable | Sellify'
+          : isSwedish
+            ? 'Annonsen kunde inte hämtas | Sellify'
+            : 'Could not load listing | Sellify',
+        description: isUnavailable
+          ? isSwedish
+            ? 'Annonsen kan ha tagits bort eller sålts. Se aktuella annonser på Sellify.'
+            : 'The listing may have been removed or sold. Browse current listings on Sellify.'
+          : isSwedish
+            ? 'Annonsen kunde inte hämtas just nu. Försök igen senare.'
+            : 'This listing could not be loaded right now. Please try again later.',
+        canonical: `${SELLIFY_CANONICAL_ORIGIN}/listing/${encodeURIComponent(slug)}`,
+        robots: 'noindex, follow',
+      });
+    }
+  }, [listing, listingError, language, slug]);
+
+  if (isLoading || (isFetching && !listing)) {
     return <div className="p-4 max-w-4xl mx-auto"><Skeleton className="aspect-square w-full rounded-3xl" /></div>;
   }
 
   if (!listing) {
+    const isUnavailable = listingError instanceof ApiError && listingError.status === 404;
+
     return (
       <main className="min-h-[60vh] px-6 py-16 flex flex-col items-center justify-center text-center">
         <h1 className="max-w-xl text-2xl md:text-3xl font-display font-bold">
-          {language === 'sv'
-            ? 'Den här varan är såld eller inte längre tillgänglig'
-            : 'This item has sold or is no longer available'}
+          {isUnavailable
+            ? language === 'sv'
+              ? 'Den här varan är såld eller inte längre tillgänglig'
+              : 'This item has sold or is no longer available'
+            : language === 'sv'
+              ? 'Annonsen kunde inte hämtas'
+              : 'We couldn’t load this listing'}
         </h1>
         <p className="mt-3 max-w-lg text-muted-foreground">
-          {language === 'sv'
-            ? 'Annonsen kan ha tagits bort eller sålts. Se aktuella annonser för fler fynd.'
-            : 'The listing may have been removed or sold. Browse current listings to find more.'}
+          {isUnavailable
+            ? language === 'sv'
+              ? 'Annonsen kan ha tagits bort eller sålts. Se aktuella annonser för fler fynd.'
+              : 'The listing may have been removed or sold. Browse current listings to find more.'
+            : language === 'sv'
+              ? 'Kontrollera anslutningen och försök igen. Om annonsen har tagits bort visas den som otillgänglig när vi kan nå servern.'
+              : 'Check your connection and try again. If the listing was removed, we’ll show that once the server is reachable.'}
         </p>
-        <Link
-          href="/"
-          className="mt-6 inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-5 font-semibold text-primary-foreground"
-        >
-          {language === 'sv' ? 'Se aktuella annonser' : 'Browse current listings'}
-        </Link>
+        {isUnavailable ? (
+          <Link
+            href="/"
+            className="mt-6 inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-5 font-semibold text-primary-foreground"
+          >
+            {language === 'sv' ? 'Se aktuella annonser' : 'Browse current listings'}
+          </Link>
+        ) : (
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => void refetchListing()}
+              className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-5 font-semibold text-primary-foreground"
+            >
+              {language === 'sv' ? 'Försök igen' : 'Try again'}
+            </button>
+            <Link href="/" className="min-h-11 inline-flex items-center px-3 font-semibold text-primary">
+              {language === 'sv' ? 'Se aktuella annonser' : 'Browse current listings'}
+            </Link>
+          </div>
+        )}
       </main>
     );
   }
