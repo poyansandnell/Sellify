@@ -202,6 +202,79 @@ export const CreateListingResponse = zod.object({
 
 
 /**
+ * @summary Search Sellify listings and legally approved external listings
+ */
+export const searchAllListingsQueryQMax = 160;
+
+
+export const searchAllListingsQueryCityMax = 120;
+
+export const searchAllListingsQueryRegionMax = 120;
+
+export const searchAllListingsQueryPostalCodeMax = 32;
+
+export const searchAllListingsQueryCountryMin = 2;
+export const searchAllListingsQueryCountryMax = 2;
+
+export const searchAllListingsQueryMinPriceMin = 0;
+
+export const searchAllListingsQueryMaxPriceMin = 0;
+
+export const searchAllListingsQueryConditionMax = 40;
+
+export const searchAllListingsQuerySellerIdMax = 200;
+
+export const searchAllListingsQueryLimitMax = 100;
+
+export const searchAllListingsQueryOffsetMin = 0;
+export const searchAllListingsQueryOffsetMax = 10000;
+
+
+
+export const SearchAllListingsQueryParams = zod.object({
+  "q": zod.coerce.string().max(searchAllListingsQueryQMax).optional(),
+  "categoryId": zod.coerce.number().min(1).optional(),
+  "city": zod.coerce.string().max(searchAllListingsQueryCityMax).optional(),
+  "region": zod.coerce.string().max(searchAllListingsQueryRegionMax).optional(),
+  "postalCode": zod.coerce.string().max(searchAllListingsQueryPostalCodeMax).optional(),
+  "country": zod.coerce.string().min(searchAllListingsQueryCountryMin).max(searchAllListingsQueryCountryMax).optional(),
+  "minPrice": zod.coerce.number().min(searchAllListingsQueryMinPriceMin).optional(),
+  "maxPrice": zod.coerce.number().min(searchAllListingsQueryMaxPriceMin).optional(),
+  "condition": zod.coerce.string().max(searchAllListingsQueryConditionMax).optional(),
+  "sellerId": zod.coerce.string().max(searchAllListingsQuerySellerIdMax).optional(),
+  "sort": zod.enum(['newest', 'price_asc', 'price_desc']).optional(),
+  "limit": zod.coerce.number().min(1).max(searchAllListingsQueryLimitMax).optional(),
+  "offset": zod.coerce.number().min(searchAllListingsQueryOffsetMin).max(searchAllListingsQueryOffsetMax).optional()
+})
+
+export const SearchAllListingsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "sourceId": zod.string(),
+  "sourceName": zod.string(),
+  "isExternal": zod.boolean(),
+  "title": zod.string(),
+  "price": zod.number().nullish(),
+  "currency": zod.string().nullable(),
+  "city": zod.string().nullish(),
+  "brand": zod.string().nullish(),
+  "model": zod.string().nullish(),
+  "condition": zod.string().nullish(),
+  "images": zod.array(zod.string()),
+  "status": zod.enum(['active', 'sold', 'removed', 'unknown']),
+  "slug": zod.string().nullish(),
+  "originalUrl": zod.string().nullish(),
+  "imageMode": zod.enum(['IMAGE_PROXY_ALLOWED', 'IMAGE_URL_ONLY', 'NO_EXTERNAL_IMAGES']),
+  "publishedAt": zod.coerce.date().nullish()
+})),
+  "total": zod.number(),
+  "sellifyCount": zod.number(),
+  "externalCount": zod.number(),
+  "activeExternalSources": zod.number()
+})
+
+
+/**
  * @summary Get a listing by id
  */
 export const GetListingParams = zod.object({
@@ -1411,6 +1484,36 @@ export const ListSeoLocationNodesResponseItem = zod.object({
   "path": zod.string()
 })
 export const ListSeoLocationNodesResponse = zod.array(ListSeoLocationNodesResponseItem)
+
+
+/**
+ * @summary List external source integration and legal-readiness status (moderator only)
+ */
+export const ListModerationSearchSourcesResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "country": zod.string(),
+  "baseUrl": zod.string().nullish(),
+  "sourceType": zod.enum(['API', 'FEED', 'INDEX', 'PARTNERSHIP_REQUIRED', 'DISABLED']),
+  "enabled": zod.boolean(),
+  "legalStatus": zod.enum(['APPROVED', 'REVIEW_REQUIRED', 'PARTNERSHIP_REQUIRED', 'DISABLED']),
+  "legalApproval": zod.boolean(),
+  "termsUrl": zod.string().nullish(),
+  "robotsUrl": zod.string().nullish(),
+  "robotsAllowsIndexing": zod.boolean().nullish(),
+  "robotsCheckedAt": zod.coerce.date().nullish(),
+  "apiDocsUrl": zod.string().nullish(),
+  "apiKeyRequired": zod.boolean(),
+  "partnershipRequired": zod.boolean(),
+  "imageMode": zod.enum(['IMAGE_PROXY_ALLOWED', 'IMAGE_URL_ONLY', 'NO_EXTERNAL_IMAGES']),
+  "refreshInterval": zod.number().nullish(),
+  "rateLimit": zod.number().nullish(),
+  "lastSuccess": zod.coerce.date().nullish(),
+  "lastFailure": zod.coerce.date().nullish(),
+  "lastError": zod.string().nullish(),
+  "externalListingCount": zod.number()
+})
+export const ListModerationSearchSourcesResponse = zod.array(ListModerationSearchSourcesResponseItem)
 
 
 export const RemoveModerationListingParams = zod.object({

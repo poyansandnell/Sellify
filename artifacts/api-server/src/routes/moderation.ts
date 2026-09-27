@@ -4,6 +4,8 @@ import { db } from "@workspace/db";
 import {
   conversations,
   contentReports,
+  externalListings,
+  externalSources,
   listings,
   messages,
   moderationEvents,
@@ -14,6 +16,7 @@ import {
   AcceptTermsBody,
   BlockUserBody,
   CreateContentReportBody,
+  ListModerationSearchSourcesResponse,
   ListSeoLocationNodesResponse,
   RemoveModerationListingBody,
   SuspendModerationUserBody,
@@ -204,6 +207,49 @@ router.get("/moderation/seo-locations", requireAuth, async (req: Request, res: R
     path: getLocationSitemapPath(row.country, row.region, row.city),
   }));
   res.json(ListSeoLocationNodesResponse.parse(nodes));
+});
+router.get("/moderation/search-sources", requireAuth, async (req: Request, res: Response): Promise<void> => {
+  if (!(await requireModerator(req, res))) return;
+  const [sources, counts] = await Promise.all([
+    db
+      .select()
+      .from(externalSources)
+      .orderBy(asc(externalSources.country), asc(externalSources.name)),
+    db
+      .select({
+        sourceId: externalListings.sourceId,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(externalListings)
+      .where(eq(externalListings.status, "ACTIVE"))
+      .groupBy(externalListings.sourceId),
+  ]);
+  const countBySource = new Map(counts.map((row) => [row.sourceId, row.count]));
+  const response = sources.map((source) => ({
+    id: source.id,
+    name: source.name,
+    country: source.country,
+    baseUrl: source.baseUrl,
+    sourceType: source.sourceType,
+    enabled: source.enabled,
+    legalStatus: source.legalStatus,
+    legalApproval: source.legalApproval,
+    termsUrl: source.termsUrl,
+    robotsUrl: source.robotsUrl,
+    robotsAllowsIndexing: source.robotsAllowsIndexing,
+    robotsCheckedAt: source.robotsCheckedAt?.toISOString() ?? null,
+    apiDocsUrl: source.apiDocsUrl,
+    apiKeyRequired: source.apiKeyRequired,
+    partnershipRequired: source.partnershipRequired,
+    imageMode: source.imageMode,
+    refreshInterval: source.refreshInterval,
+    rateLimit: source.rateLimit,
+    lastSuccess: source.lastSuccess?.toISOString() ?? null,
+    lastFailure: source.lastFailure?.toISOString() ?? null,
+    lastError: source.lastError,
+    externalListingCount: countBySource.get(source.id) ?? 0,
+  }));
+  res.json(ListModerationSearchSourcesResponse.parse(response));
 });
 router.get("/moderation/events", requireAuth, async (req: Request, res: Response) => {
   if (!(await requireModerator(req, res))) return;

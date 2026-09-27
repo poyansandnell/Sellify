@@ -51,10 +51,13 @@ import type {
   Profile,
   ProfileUpdate,
   PushTokenInput,
+  SearchAllListingsParams,
+  SearchSourceAdmin,
   SellerPublic,
   SeoLocationNode,
   TermsAcceptance,
   TermsAcceptanceInput,
+  UnifiedSearchResult,
   UploadUrlRequest,
   UploadUrlResponse,
   UserBlock,
@@ -397,6 +400,90 @@ export const useCreateListing = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getCreateListingMutationOptions(options));
     }
+
+export const getSearchAllListingsUrl = (params?: SearchAllListingsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/search?${stringifiedParams}` : `/api/search`
+}
+
+/**
+ * @summary Search Sellify listings and legally approved external listings
+ */
+export const searchAllListings = async (params?: SearchAllListingsParams, options?: RequestInit): Promise<UnifiedSearchResult> => {
+
+  return customFetch<UnifiedSearchResult>(getSearchAllListingsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getSearchAllListingsQueryKey = (params?: SearchAllListingsParams,) => {
+    return [
+    `/api/search`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getSearchAllListingsQueryOptions = <TData = Awaited<ReturnType<typeof searchAllListings>>, TError = ErrorType<unknown>>(params?: SearchAllListingsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchAllListings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSearchAllListingsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof searchAllListings>>> = ({ signal }) => searchAllListings(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof searchAllListings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type SearchAllListingsQueryResult = NonNullable<Awaited<ReturnType<typeof searchAllListings>>>
+export type SearchAllListingsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Search Sellify listings and legally approved external listings
+ */
+
+export function useSearchAllListings<TData = Awaited<ReturnType<typeof searchAllListings>>, TError = ErrorType<unknown>>(
+ params?: SearchAllListingsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchAllListings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getSearchAllListingsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetListingUrl = (id: number,) => {
 
@@ -3007,6 +3094,83 @@ export function useListSeoLocationNodes<TData = Awaited<ReturnType<typeof listSe
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListSeoLocationNodesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListModerationSearchSourcesUrl = () => {
+
+
+
+
+  return `/api/moderation/search-sources`
+}
+
+/**
+ * @summary List external source integration and legal-readiness status (moderator only)
+ */
+export const listModerationSearchSources = async ( options?: RequestInit): Promise<SearchSourceAdmin[]> => {
+
+  return customFetch<SearchSourceAdmin[]>(getListModerationSearchSourcesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListModerationSearchSourcesQueryKey = () => {
+    return [
+    `/api/moderation/search-sources`
+    ] as const;
+    }
+
+
+export const getListModerationSearchSourcesQueryOptions = <TData = Awaited<ReturnType<typeof listModerationSearchSources>>, TError = ErrorType<ErrorEnvelope>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listModerationSearchSources>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListModerationSearchSourcesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listModerationSearchSources>>> = ({ signal }) => listModerationSearchSources({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listModerationSearchSources>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListModerationSearchSourcesQueryResult = NonNullable<Awaited<ReturnType<typeof listModerationSearchSources>>>
+export type ListModerationSearchSourcesQueryError = ErrorType<ErrorEnvelope>
+
+
+/**
+ * @summary List external source integration and legal-readiness status (moderator only)
+ */
+
+export function useListModerationSearchSources<TData = Awaited<ReturnType<typeof listModerationSearchSources>>, TError = ErrorType<ErrorEnvelope>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listModerationSearchSources>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListModerationSearchSourcesQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

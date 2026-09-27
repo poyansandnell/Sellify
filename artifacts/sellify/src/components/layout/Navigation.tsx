@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'wouter';
-import { Home, PlusCircle, MessageSquare, List, User, Shield, MapPin } from 'lucide-react';
+import { Home, PlusCircle, MessageSquare, List, User, Shield, MapPin, Globe2 } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { useUser, Show } from '@clerk/react';
 import { cn } from '@/lib/utils';
@@ -8,7 +8,7 @@ import { useGetMe } from '@workspace/api-client-react';
 
 export function Navigation({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const { user } = useUser();
   const { data: me } = useGetMe();
 
@@ -23,6 +23,7 @@ export function Navigation({ children }: { children: React.ReactNode }) {
   if (me?.isModerator) {
     navItems.push({ href: '/moderation', label: 'Moderation', icon: Shield });
     navItems.push({ href: '/admin/seo', label: 'SEO', icon: MapPin });
+    navItems.push({ href: '/admin/search-sources', label: language === 'sv' ? 'Sökkällor' : 'Search sources', icon: Globe2 });
   }
 
   return (

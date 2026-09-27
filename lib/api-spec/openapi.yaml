@@ -26,6 +26,8 @@ tags:
     description: Object storage upload and serving endpoints.
   - name: moderation
     description: Safety, blocking and moderator operations
+  - name: search
+    description: Unified search across Sellify and permitted external sources
 paths:
   /healthz:
     get:
@@ -123,6 +125,58 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Listing"
+  /search:
+    get:
+      operationId: searchAllListings
+      tags: [search]
+      summary: Search Sellify listings and legally approved external listings
+      parameters:
+        - name: q
+          in: query
+          schema: { type: string, maxLength: 160 }
+        - name: categoryId
+          in: query
+          schema: { type: integer, minimum: 1 }
+        - name: city
+          in: query
+          schema: { type: string, maxLength: 120 }
+        - name: region
+          in: query
+          schema: { type: string, maxLength: 120 }
+        - name: postalCode
+          in: query
+          schema: { type: string, maxLength: 32 }
+        - name: country
+          in: query
+          schema: { type: string, minLength: 2, maxLength: 2 }
+        - name: minPrice
+          in: query
+          schema: { type: number, minimum: 0 }
+        - name: maxPrice
+          in: query
+          schema: { type: number, minimum: 0 }
+        - name: condition
+          in: query
+          schema: { type: string, maxLength: 40 }
+        - name: sellerId
+          in: query
+          schema: { type: string, maxLength: 200 }
+        - name: sort
+          in: query
+          schema: { type: string, enum: [newest, price_asc, price_desc] }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100 }
+        - name: offset
+          in: query
+          schema: { type: integer, minimum: 0, maximum: 10000 }
+      responses:
+        "200":
+          description: Combined search results. External records are included only from enabled, legally approved sources.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnifiedSearchResult"
   /listings/{id}:
     get:
       operationId: getListing
@@ -725,6 +779,26 @@ paths:
         "403":
           description: Moderator access required
           content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } }
+  /moderation/search-sources:
+    get:
+      operationId: listModerationSearchSources
+      tags: [moderation]
+      summary: List external source integration and legal-readiness status (moderator only)
+      responses:
+        "200":
+          description: Search source registry
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SearchSourceAdmin"
+        "401":
+          description: Unauthorized
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } }
+        "403":
+          description: Moderator access required
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } }
   /moderation/listings/{id}/remove:
     post:
       operationId: removeModerationListing
@@ -1305,3 +1379,64 @@ components:
         city: { type: string }
         listingCount: { type: integer, minimum: 1 }
         path: { type: string }
+    UnifiedSearchListing:
+      type: object
+      required: [id, sourceId, sourceName, isExternal, title, currency, images, status, imageMode]
+      properties:
+        id: { type: string }
+        sourceId: { type: string }
+        sourceName: { type: string }
+        isExternal: { type: boolean }
+        title: { type: string }
+        price: { type: ["number", "null"] }
+        currency: { type: ["string", "null"] }
+        city: { type: ["string", "null"] }
+        brand: { type: ["string", "null"] }
+        model: { type: ["string", "null"] }
+        condition: { type: ["string", "null"] }
+        images:
+          type: array
+          items: { type: string }
+        status: { type: string, enum: [active, sold, removed, unknown] }
+        slug: { type: ["string", "null"] }
+        originalUrl: { type: ["string", "null"] }
+        imageMode: { type: string, enum: [IMAGE_PROXY_ALLOWED, IMAGE_URL_ONLY, NO_EXTERNAL_IMAGES] }
+        publishedAt: { type: ["string", "null"], format: date-time }
+    UnifiedSearchResult:
+      type: object
+      required: [items, total, sellifyCount, externalCount, activeExternalSources]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/UnifiedSearchListing"
+        total: { type: integer }
+        sellifyCount: { type: integer }
+        externalCount: { type: integer }
+        activeExternalSources: { type: integer }
+    SearchSourceAdmin:
+      type: object
+      required: [id, name, country, sourceType, enabled, legalStatus, legalApproval, apiKeyRequired, partnershipRequired, imageMode, externalListingCount]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        country: { type: string }
+        baseUrl: { type: ["string", "null"] }
+        sourceType: { type: string, enum: [API, FEED, INDEX, PARTNERSHIP_REQUIRED, DISABLED] }
+        enabled: { type: boolean }
+        legalStatus: { type: string, enum: [APPROVED, REVIEW_REQUIRED, PARTNERSHIP_REQUIRED, DISABLED] }
+        legalApproval: { type: boolean }
+        termsUrl: { type: ["string", "null"] }
+        robotsUrl: { type: ["string", "null"] }
+        robotsAllowsIndexing: { type: ["boolean", "null"] }
+        robotsCheckedAt: { type: ["string", "null"], format: date-time }
+        apiDocsUrl: { type: ["string", "null"] }
+        apiKeyRequired: { type: boolean }
+        partnershipRequired: { type: boolean }
+        imageMode: { type: string, enum: [IMAGE_PROXY_ALLOWED, IMAGE_URL_ONLY, NO_EXTERNAL_IMAGES] }
+        refreshInterval: { type: ["integer", "null"] }
+        rateLimit: { type: ["integer", "null"] }
+        lastSuccess: { type: ["string", "null"], format: date-time }
+        lastFailure: { type: ["string", "null"], format: date-time }
+        lastError: { type: ["string", "null"] }
+        externalListingCount: { type: integer }

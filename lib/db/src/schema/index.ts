@@ -187,3 +187,6 @@ export const moderationEvents = pgTable(
   },
   (t) => [index("moderation_events_created_idx").on(t.createdAt)],
 );
+
+export * from "./externalSources";
+export * from "./externalListings";

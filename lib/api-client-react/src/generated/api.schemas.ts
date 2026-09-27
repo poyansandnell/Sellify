@@ -750,6 +750,128 @@ export interface SeoLocationNode {
   path: string;
 }
 
+export type UnifiedSearchListingStatus = typeof UnifiedSearchListingStatus[keyof typeof UnifiedSearchListingStatus];
+
+
+export const UnifiedSearchListingStatus = {
+  active: 'active',
+  sold: 'sold',
+  removed: 'removed',
+  unknown: 'unknown',
+} as const;
+
+export type UnifiedSearchListingImageMode = typeof UnifiedSearchListingImageMode[keyof typeof UnifiedSearchListingImageMode];
+
+
+export const UnifiedSearchListingImageMode = {
+  IMAGE_PROXY_ALLOWED: 'IMAGE_PROXY_ALLOWED',
+  IMAGE_URL_ONLY: 'IMAGE_URL_ONLY',
+  NO_EXTERNAL_IMAGES: 'NO_EXTERNAL_IMAGES',
+} as const;
+
+export interface UnifiedSearchListing {
+  id: string;
+  sourceId: string;
+  sourceName: string;
+  isExternal: boolean;
+  title: string;
+  /** @nullable */
+  price?: number | null;
+  /** @nullable */
+  currency: string | null;
+  /** @nullable */
+  city?: string | null;
+  /** @nullable */
+  brand?: string | null;
+  /** @nullable */
+  model?: string | null;
+  /** @nullable */
+  condition?: string | null;
+  images: string[];
+  status: UnifiedSearchListingStatus;
+  /** @nullable */
+  slug?: string | null;
+  /** @nullable */
+  originalUrl?: string | null;
+  imageMode: UnifiedSearchListingImageMode;
+  /** @nullable */
+  publishedAt?: string | null;
+}
+
+export interface UnifiedSearchResult {
+  items: UnifiedSearchListing[];
+  total: number;
+  sellifyCount: number;
+  externalCount: number;
+  activeExternalSources: number;
+}
+
+export type SearchSourceAdminSourceType = typeof SearchSourceAdminSourceType[keyof typeof SearchSourceAdminSourceType];
+
+
+export const SearchSourceAdminSourceType = {
+  API: 'API',
+  FEED: 'FEED',
+  INDEX: 'INDEX',
+  PARTNERSHIP_REQUIRED: 'PARTNERSHIP_REQUIRED',
+  DISABLED: 'DISABLED',
+} as const;
+
+export type SearchSourceAdminLegalStatus = typeof SearchSourceAdminLegalStatus[keyof typeof SearchSourceAdminLegalStatus];
+
+
+export const SearchSourceAdminLegalStatus = {
+  APPROVED: 'APPROVED',
+  REVIEW_REQUIRED: 'REVIEW_REQUIRED',
+  PARTNERSHIP_REQUIRED: 'PARTNERSHIP_REQUIRED',
+  DISABLED: 'DISABLED',
+} as const;
+
+export type SearchSourceAdminImageMode = typeof SearchSourceAdminImageMode[keyof typeof SearchSourceAdminImageMode];
+
+
+export const SearchSourceAdminImageMode = {
+  IMAGE_PROXY_ALLOWED: 'IMAGE_PROXY_ALLOWED',
+  IMAGE_URL_ONLY: 'IMAGE_URL_ONLY',
+  NO_EXTERNAL_IMAGES: 'NO_EXTERNAL_IMAGES',
+} as const;
+
+export interface SearchSourceAdmin {
+  id: string;
+  name: string;
+  country: string;
+  /** @nullable */
+  baseUrl?: string | null;
+  sourceType: SearchSourceAdminSourceType;
+  enabled: boolean;
+  legalStatus: SearchSourceAdminLegalStatus;
+  legalApproval: boolean;
+  /** @nullable */
+  termsUrl?: string | null;
+  /** @nullable */
+  robotsUrl?: string | null;
+  /** @nullable */
+  robotsAllowsIndexing?: boolean | null;
+  /** @nullable */
+  robotsCheckedAt?: string | null;
+  /** @nullable */
+  apiDocsUrl?: string | null;
+  apiKeyRequired: boolean;
+  partnershipRequired: boolean;
+  imageMode: SearchSourceAdminImageMode;
+  /** @nullable */
+  refreshInterval?: number | null;
+  /** @nullable */
+  rateLimit?: number | null;
+  /** @nullable */
+  lastSuccess?: string | null;
+  /** @nullable */
+  lastFailure?: string | null;
+  /** @nullable */
+  lastError?: string | null;
+  externalListingCount: number;
+}
+
 export type ListListingsParams = {
 q?: string;
 categoryId?: number;
@@ -770,6 +892,70 @@ export type ListListingsSort = typeof ListListingsSort[keyof typeof ListListings
 
 
 export const ListListingsSort = {
+  newest: 'newest',
+  price_asc: 'price_asc',
+  price_desc: 'price_desc',
+} as const;
+
+export type SearchAllListingsParams = {
+/**
+ * @maxLength 160
+ */
+q?: string;
+/**
+ * @minimum 1
+ */
+categoryId?: number;
+/**
+ * @maxLength 120
+ */
+city?: string;
+/**
+ * @maxLength 120
+ */
+region?: string;
+/**
+ * @maxLength 32
+ */
+postalCode?: string;
+/**
+ * @minLength 2
+ * @maxLength 2
+ */
+country?: string;
+/**
+ * @minimum 0
+ */
+minPrice?: number;
+/**
+ * @minimum 0
+ */
+maxPrice?: number;
+/**
+ * @maxLength 40
+ */
+condition?: string;
+/**
+ * @maxLength 200
+ */
+sellerId?: string;
+sort?: SearchAllListingsSort;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+/**
+ * @minimum 0
+ * @maximum 10000
+ */
+offset?: number;
+};
+
+export type SearchAllListingsSort = typeof SearchAllListingsSort[keyof typeof SearchAllListingsSort];
+
+
+export const SearchAllListingsSort = {
   newest: 'newest',
   price_asc: 'price_asc',
   price_desc: 'price_desc',

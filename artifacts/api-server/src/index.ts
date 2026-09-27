@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { seedReviewUser } from "./lib/seedReviewUser";
+import { seedExternalSourceCatalog } from "./lib/externalSources";
 
 const rawPort = process.env["PORT"];
 
@@ -16,13 +17,21 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-app.listen(port, (err) => {
-  if (err) {
-    logger.error({ err }, "Error listening on port");
-    process.exit(1);
-  }
+async function startServer(): Promise<void> {
+  await seedExternalSourceCatalog();
+  app.listen(port, (err) => {
+    if (err) {
+      logger.error({ err }, "Error listening on port");
+      process.exit(1);
+    }
 
-  logger.info({ port }, "Server listening");
+    logger.info({ port }, "Server listening");
 
-  void seedReviewUser();
+    void seedReviewUser();
+  });
+}
+
+void startServer().catch((err: unknown) => {
+  logger.error({ err }, "Failed to initialize API server");
+  process.exit(1);
 });
