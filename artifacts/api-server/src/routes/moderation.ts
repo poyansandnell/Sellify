@@ -19,13 +19,23 @@ import {
   ListModerationSearchSourcesResponse,
   ListSeoLocationNodesResponse,
   RemoveModerationListingBody,
+  SyncModerationSearchSourceBody,
   SuspendModerationUserBody,
   UpdateModerationReportBody,
+  UpdateModerationSearchSourceBody,
 } from "@workspace/api-zod";
 import { requireAuth, requireAuthAllowUnacceptedTerms, type AuthedRequest } from "../lib/auth";
 import { ensureProfile } from "../lib/profile";
 import { CURRENT_TERMS_VERSION } from "../lib/terms";
 import { getLocationSitemapPath } from "../lib/seo-sitemap";
+import {
+  checkExternalSourceRobots,
+  getExternalAdapterReadiness,
+  getExternalSourceAdapter,
+  isSafeExternalUrl,
+} from "../lib/externalAdapters";
+import { assertSourceMayIngest } from "../lib/externalSources";
+import { syncExternalSource } from "../lib/externalSourceSync";
 
 const router: IRouter = Router();
 const userId = (req: Request) => (req as AuthedRequest).userId;
@@ -52,6 +62,85 @@ async function requireModerator(req: Request, res: Response): Promise<boolean> {
   const [profile] = await db.select().from(profiles).where(eq(profiles.id, userId(req)));
   if (!profile?.isModerator) { res.status(403).json({ error: "Moderator access required" }); return false; }
   return true;
+}
+function sourceOperationalStatus(
+  source: typeof externalSources.$inferSelect,
+  readiness: ReturnType<typeof getExternalAdapterReadiness>,
+) {
+  if (source.sourceType === "DISABLED") return "DISABLED";
+  const legalReady =
+    source.legalStatus === "APPROVED" &&
+    source.legalApproval &&
+    Boolean(source.legalApprovalReference?.trim()) &&
+    Boolean(source.legalApprovedAt);
+  if (!legalReady) return "NEEDS_LEGAL_APPROVAL";
+  if (source.partnershipRequired && !source.partnershipApproved) {
+    return "NEEDS_PARTNERSHIP";
+  }
+  if (!readiness.adapterAvailable) return "DISABLED";
+  if (source.apiKeyRequired && !readiness.integrationConfigured) {
+    return "NEEDS_CREDENTIALS";
+  }
+  if (
+    (source.sourceType === "FEED" || source.sourceType === "INDEX") &&
+    !readiness.integrationConfigured
+  ) {
+    return "NEEDS_FEED_URL";
+  }
+  if (
+    source.sourceType === "INDEX" &&
+    (!source.robotsAllowsIndexing || !source.robotsCheckedAt)
+  ) {
+    return "NEEDS_ROBOTS_CHECK";
+  }
+  if (!source.enabled) return "READY";
+  return source.lastFailure &&
+    source.lastFailure.getTime() > (source.lastSuccess?.getTime() ?? 0)
+    ? "SYNC_ERROR"
+    : "ACTIVE";
+}
+
+function searchSourceAdminDto(
+  source: typeof externalSources.$inferSelect,
+  externalListingCount: number,
+) {
+  const readiness = getExternalAdapterReadiness(source);
+  const operationalStatus = sourceOperationalStatus(source, readiness);
+  return {
+    id: source.id,
+    name: source.name,
+    country: source.country,
+    baseUrl: source.baseUrl,
+    sourceType: source.sourceType,
+    enabled: source.enabled,
+    legalStatus: source.legalStatus,
+    legalApproval: source.legalApproval,
+    legalApprovalReference: source.legalApprovalReference,
+    legalApprovedAt: source.legalApprovedAt?.toISOString() ?? null,
+    legalApprovedBy: source.legalApprovedBy,
+    termsUrl: source.termsUrl,
+    robotsUrl: source.robotsUrl,
+    robotsAllowsIndexing: source.robotsAllowsIndexing,
+    robotsCheckedAt: source.robotsCheckedAt?.toISOString() ?? null,
+    apiDocsUrl: source.apiDocsUrl,
+    apiKeyRequired: source.apiKeyRequired,
+    partnershipRequired: source.partnershipRequired,
+    partnershipApproved: source.partnershipApproved,
+    feedUrl: source.feedUrl,
+    feedFormat: source.feedFormat,
+    fieldMap: source.fieldMap,
+    imageMode: source.imageMode,
+    refreshInterval: source.refreshInterval,
+    rateLimit: source.rateLimit,
+    lastSuccess: source.lastSuccess?.toISOString() ?? null,
+    lastFailure: source.lastFailure?.toISOString() ?? null,
+    lastError: source.lastError,
+    adapterAvailable: readiness.adapterAvailable,
+    integrationConfigured: readiness.integrationConfigured,
+    canEnable: operationalStatus === "READY",
+    operationalStatus,
+    externalListingCount,
+  };
 }
 async function validateReportTarget(reporterId: string, data: { reportedUserId: string; targetType: string; listingId?: number | null; messageId?: number | null; conversationId?: number | null }) {
   if (data.targetType === "listing") {
@@ -225,32 +314,333 @@ router.get("/moderation/search-sources", requireAuth, async (req: Request, res: 
       .groupBy(externalListings.sourceId),
   ]);
   const countBySource = new Map(counts.map((row) => [row.sourceId, row.count]));
-  const response = sources.map((source) => ({
-    id: source.id,
-    name: source.name,
-    country: source.country,
-    baseUrl: source.baseUrl,
-    sourceType: source.sourceType,
-    enabled: source.enabled,
-    legalStatus: source.legalStatus,
-    legalApproval: source.legalApproval,
-    termsUrl: source.termsUrl,
-    robotsUrl: source.robotsUrl,
-    robotsAllowsIndexing: source.robotsAllowsIndexing,
-    robotsCheckedAt: source.robotsCheckedAt?.toISOString() ?? null,
-    apiDocsUrl: source.apiDocsUrl,
-    apiKeyRequired: source.apiKeyRequired,
-    partnershipRequired: source.partnershipRequired,
-    imageMode: source.imageMode,
-    refreshInterval: source.refreshInterval,
-    rateLimit: source.rateLimit,
-    lastSuccess: source.lastSuccess?.toISOString() ?? null,
-    lastFailure: source.lastFailure?.toISOString() ?? null,
-    lastError: source.lastError,
-    externalListingCount: countBySource.get(source.id) ?? 0,
-  }));
+  const response = sources.map((source) =>
+    searchSourceAdminDto(source, countBySource.get(source.id) ?? 0),
+  );
   res.json(ListModerationSearchSourcesResponse.parse(response));
 });
+router.patch(
+  "/moderation/search-sources/:id",
+  requireAuth,
+  async (req: Request, res: Response): Promise<void> => {
+    if (!(await requireModerator(req, res))) return;
+    const parsed = UpdateModerationSearchSourceBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const id = String(req.params.id);
+    const [source] = await db
+      .select()
+      .from(externalSources)
+      .where(eq(externalSources.id, id))
+      .limit(1);
+    if (!source) {
+      res.status(404).json({ error: "Search source not found" });
+      return;
+    }
+    const data = parsed.data;
+    if (Object.keys(data).length === 0) {
+      res.status(400).json({ error: "At least one source field must be changed" });
+      return;
+    }
+
+    if (data.termsUrl !== undefined && data.termsUrl !== null && !isSafeExternalUrl(data.termsUrl)) {
+      res.status(400).json({ error: "Terms URL must be a public HTTPS URL" });
+      return;
+    }
+    if (
+      (data.feedUrl !== undefined || data.feedFormat !== undefined) &&
+      source.enabled
+    ) {
+      res.status(400).json({ error: "Disable the source before changing feed configuration" });
+      return;
+    }
+    if (
+      (data.feedUrl !== undefined || data.feedFormat !== undefined || data.fieldMap !== undefined) &&
+      source.sourceType !== "FEED" &&
+      source.sourceType !== "INDEX"
+    ) {
+      res.status(400).json({ error: "Feed configuration is only supported for feed and index sources" });
+      return;
+    }
+    if (data.feedUrl && !isSafeExternalUrl(data.feedUrl)) {
+      res.status(400).json({ error: "Feed URL must be a public HTTPS URL" });
+      return;
+    }
+    if (data.fieldMap && data.fieldMap !== null) {
+      const allowedFieldNames = new Set([
+        "externalId", "originalUrl", "title", "description", "category",
+        "subcategory", "brand", "model", "color", "condition", "price",
+        "currency", "country", "region", "city", "postalCode", "sellerName",
+        "sellerType", "shippingAvailable", "auction", "auctionEnd",
+        "publishedAt", "sourceUpdatedAt", "imageUrls", "status",
+      ]);
+      const validMapping = Object.entries(data.fieldMap).every(
+        ([key, path]) =>
+          allowedFieldNames.has(key) &&
+          path.length <= 200 &&
+          /^[\w@:-]+(?:\.[\w@:-]+)*$/.test(path),
+      );
+      if (!validMapping || Object.keys(data.fieldMap).length > 30) {
+        res.status(400).json({ error: "Feed field mapping contains unsupported fields or paths" });
+        return;
+      }
+    }
+
+    const now = new Date();
+    const legalApprovalReference =
+      data.legalApprovalReference !== undefined
+        ? data.legalApprovalReference?.trim() || null
+        : source.legalApprovalReference;
+    let legalStatus = data.legalStatus ?? source.legalStatus;
+    let legalApproval = data.legalApproval ?? source.legalApproval;
+    if (data.legalApproval === false && data.legalStatus === undefined) {
+      legalStatus = "REVIEW_REQUIRED";
+    }
+    if (legalStatus !== "APPROVED") legalApproval = false;
+    if (
+      (legalStatus === "APPROVED" && !legalApproval) ||
+      (data.legalApproval === true && legalStatus !== "APPROVED")
+    ) {
+      res.status(400).json({ error: "Record legal approval and its approved status together" });
+      return;
+    }
+    if (legalApproval && !legalApprovalReference) {
+      res.status(400).json({ error: "A legal approval reference is required" });
+      return;
+    }
+    const approvalChanged =
+      legalApproval &&
+      (data.legalApproval === true ||
+        !source.legalApprovedAt ||
+        legalApprovalReference !== source.legalApprovalReference);
+    if (legalApproval && !source.legalApprovedAt && data.legalApproval !== true) {
+      res.status(400).json({ error: "Confirm legal approval to record its reviewer and date" });
+      return;
+    }
+    const nextPartnershipApproved =
+      data.partnershipApproved ?? source.partnershipApproved;
+    if (
+      source.partnershipRequired &&
+      nextPartnershipApproved &&
+      (!legalApproval || legalStatus !== "APPROVED")
+    ) {
+      res.status(400).json({ error: "Partnership approval requires documented legal approval" });
+      return;
+    }
+    const legalApprovedAt = legalApproval
+      ? approvalChanged
+        ? now
+        : source.legalApprovedAt
+      : null;
+    const legalApprovedBy = legalApproval
+      ? approvalChanged
+        ? userId(req)
+        : source.legalApprovedBy
+      : null;
+    const candidate = {
+      ...source,
+      legalStatus,
+      legalApproval,
+      legalApprovalReference,
+      legalApprovedAt,
+      legalApprovedBy,
+      partnershipApproved: nextPartnershipApproved,
+      feedUrl: data.feedUrl !== undefined ? data.feedUrl : source.feedUrl,
+      feedFormat: data.feedFormat !== undefined ? data.feedFormat : source.feedFormat,
+      fieldMap: data.fieldMap !== undefined ? data.fieldMap : source.fieldMap,
+      termsUrl: data.termsUrl !== undefined ? data.termsUrl : source.termsUrl,
+      enabled: false,
+    };
+    const readiness = getExternalAdapterReadiness(candidate);
+    const requestedEnabled = data.enabled ?? source.enabled;
+    if (requestedEnabled && sourceOperationalStatus(candidate, readiness) !== "READY") {
+      res.status(409).json({
+        error: `Source cannot be enabled until readiness checks pass (${sourceOperationalStatus(candidate, readiness)})`,
+      });
+      return;
+    }
+    const enabled =
+      requestedEnabled &&
+      legalStatus === "APPROVED" &&
+      legalApproval &&
+      Boolean(legalApprovalReference) &&
+      Boolean(legalApprovedAt) &&
+      (!source.partnershipRequired || nextPartnershipApproved);
+    const setValues = {
+      enabled,
+      legalStatus,
+      legalApproval,
+      legalApprovalReference,
+      legalApprovedAt,
+      legalApprovedBy,
+      partnershipApproved: nextPartnershipApproved,
+      termsUrl: candidate.termsUrl,
+      feedUrl: candidate.feedUrl,
+      feedFormat: candidate.feedFormat,
+      fieldMap: candidate.fieldMap,
+      updatedAt: now,
+    };
+    const updated = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(externalSources)
+        .set(setValues)
+        .where(eq(externalSources.id, id))
+        .returning();
+      if (row) {
+        await event(userId(req), "external_source_updated", {
+          metadata: {
+            sourceId: id,
+            enabled,
+            legalStatus,
+            approvalChanged: Boolean(approvalChanged),
+            feedConfigurationChanged:
+              data.feedUrl !== undefined ||
+              data.feedFormat !== undefined ||
+              data.fieldMap !== undefined,
+          },
+        }, tx);
+      }
+      return row;
+    });
+    if (!updated) {
+      res.status(404).json({ error: "Search source not found" });
+      return;
+    }
+    const [countRow] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(externalListings)
+      .where(
+        and(
+          eq(externalListings.sourceId, id),
+          eq(externalListings.status, "ACTIVE"),
+        ),
+      );
+    const response = searchSourceAdminDto(updated, countRow?.count ?? 0);
+    const [validated] = ListModerationSearchSourcesResponse.parse([response]);
+    res.json(validated);
+  },
+);
+router.post(
+  "/moderation/search-sources/:id/sync",
+  requireAuth,
+  async (req: Request, res: Response): Promise<void> => {
+    if (!(await requireModerator(req, res))) return;
+    const parsed = SyncModerationSearchSourceBody.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const id = String(req.params.id);
+    const [source] = await db
+      .select()
+      .from(externalSources)
+      .where(eq(externalSources.id, id))
+      .limit(1);
+    if (!source) {
+      res.status(404).json({ error: "Search source not found" });
+      return;
+    }
+    if (source.sourceType === "API" && !parsed.data.query?.trim()) {
+      res.status(400).json({ error: "Enter a search term before syncing this marketplace" });
+      return;
+    }
+    const readiness = getExternalAdapterReadiness(source);
+    try {
+      if (!getExternalSourceAdapter(source)) {
+        throw new Error("This source does not have an available adapter");
+      }
+      assertSourceMayIngest(source, {
+        hasApiCredential: readiness.integrationConfigured,
+      });
+      if (!readiness.integrationConfigured) {
+        throw new Error("The API or feed configuration is incomplete");
+      }
+    } catch (error) {
+      res.status(409).json({
+        error: error instanceof Error ? error.message : "Source is not ready to sync",
+      });
+      return;
+    }
+    try {
+      const result = await syncExternalSource(source, {
+        query: parsed.data.query,
+        limit: parsed.data.limit ?? 20,
+      });
+      res.json(result);
+    } catch (error) {
+      req.log.error({ err: error, sourceId: id }, "External source sync failed");
+      res.status(502).json({ error: "External source sync failed; check source status and credentials" });
+    }
+  },
+);
+router.post(
+  "/moderation/search-sources/:id/check-robots",
+  requireAuth,
+  async (req: Request, res: Response): Promise<void> => {
+    if (!(await requireModerator(req, res))) return;
+    const id = String(req.params.id);
+    const [source] = await db
+      .select()
+      .from(externalSources)
+      .where(eq(externalSources.id, id))
+      .limit(1);
+    if (!source) {
+      res.status(404).json({ error: "Search source not found" });
+      return;
+    }
+    if (
+      source.sourceType !== "INDEX" ||
+      source.legalStatus !== "APPROVED" ||
+      !source.legalApproval ||
+      !source.legalApprovalReference?.trim() ||
+      !source.legalApprovedAt ||
+      (source.partnershipRequired && !source.partnershipApproved)
+    ) {
+      res.status(409).json({ error: "Only legally approved index sources can be checked" });
+      return;
+    }
+    try {
+      const result = await checkExternalSourceRobots(source);
+      const checkedAt = new Date();
+      await db.transaction(async (tx) => {
+        await tx
+          .update(externalSources)
+          .set({
+            robotsUrl: result.robotsUrl,
+            robotsAllowsIndexing: result.allowed,
+            robotsCheckedAt: checkedAt,
+            ...(!result.allowed ? { enabled: false } : {}),
+            updatedAt: checkedAt,
+          })
+          .where(eq(externalSources.id, id));
+        await event(userId(req), "external_source_robots_checked", {
+          metadata: { sourceId: id, allowed: result.allowed },
+        }, tx);
+      });
+      res.json({
+        sourceId: id,
+        robotsUrl: result.robotsUrl,
+        allowed: result.allowed,
+        checkedAt: checkedAt.toISOString(),
+      });
+    } catch (error) {
+      req.log.warn({ sourceId: id }, "External source robots check failed");
+      await db
+        .update(externalSources)
+        .set({
+          robotsAllowsIndexing: false,
+          robotsCheckedAt: new Date(),
+          enabled: false,
+          lastError: "robots.txt could not be verified",
+          updatedAt: new Date(),
+        })
+        .where(eq(externalSources.id, id));
+      res.status(502).json({ error: "robots.txt could not be verified" });
+    }
+  },
+);
 router.get("/moderation/events", requireAuth, async (req: Request, res: Response) => {
   if (!(await requireModerator(req, res))) return;
   const rows = await db.select().from(moderationEvents).orderBy(desc(moderationEvents.createdAt)).limit(200);

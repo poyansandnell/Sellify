@@ -177,6 +177,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UnifiedSearchResult"
+  /search/price-statistics:
+    get:
+      operationId: getSearchPriceStatistics
+      tags: [search]
+      summary: Get cross-source price statistics without mixing currencies
+      parameters:
+        - name: q
+          in: query
+          schema: { type: string, maxLength: 160 }
+        - name: categoryId
+          in: query
+          schema: { type: integer, minimum: 1 }
+        - name: country
+          in: query
+          schema: { type: string, minLength: 2, maxLength: 2 }
+        - name: condition
+          in: query
+          schema: { type: string, maxLength: 40 }
+      responses:
+        "200":
+          description: Grouped price statistics, separated by currency
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchPriceStatistics"
   /listings/{id}:
     get:
       operationId: getListing
@@ -799,6 +824,104 @@ paths:
         "403":
           description: Moderator access required
           content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } }
+  /moderation/search-sources/{id}:
+    patch:
+      operationId: updateModerationSearchSource
+      tags: [moderation]
+      summary: Update a source's approval record, feed configuration, or active state
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchSourceUpdate"
+      responses:
+        "200":
+          description: Updated source status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchSourceAdmin"
+        "400":
+          description: Invalid source update or readiness requirements not met
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } }
+        "401":
+          description: Unauthorized
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } }
+        "403":
+          description: Moderator access required
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } }
+        "404":
+          description: Source not found
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } }
+    post:
+      operationId: syncModerationSearchSource
+      tags: [moderation]
+      summary: Sync listings from an enabled and approved source (moderator only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchSourceSyncInput"
+      responses:
+        "200":
+          description: Sync counts, including duplicates and normalization skips
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchSourceSyncResult"
+        "400":
+          description: Invalid sync request
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } }
+        "401":
+          description: Unauthorized
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } }
+        "403":
+          description: Moderator access required
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } }
+        "409":
+          description: Source is not approved, enabled, or configured
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } }
+  /moderation/search-sources/{id}/check-robots:
+    post:
+      operationId: checkModerationSearchSourceRobots
+      tags: [moderation]
+      summary: Check robots.txt for a legally approved index source
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: robots.txt check result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchSourceRobotsResult"
+        "401":
+          description: Unauthorized
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } }
+        "403":
+          description: Moderator access required
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } }
+        "404":
+          description: Source not found
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } }
+        "409":
+          description: Source is not approved for an indexing check
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorEnvelope" } } }
   /moderation/listings/{id}/remove:
     post:
       operationId: removeModerationListing
@@ -1416,7 +1539,7 @@ components:
         activeExternalSources: { type: integer }
     SearchSourceAdmin:
       type: object
-      required: [id, name, country, sourceType, enabled, legalStatus, legalApproval, apiKeyRequired, partnershipRequired, imageMode, externalListingCount]
+      required: [id, name, country, sourceType, enabled, legalStatus, legalApproval, apiKeyRequired, partnershipRequired, partnershipApproved, imageMode, adapterAvailable, integrationConfigured, canEnable, operationalStatus, externalListingCount]
       properties:
         id: { type: string }
         name: { type: string }
@@ -1426,6 +1549,9 @@ components:
         enabled: { type: boolean }
         legalStatus: { type: string, enum: [APPROVED, REVIEW_REQUIRED, PARTNERSHIP_REQUIRED, DISABLED] }
         legalApproval: { type: boolean }
+        legalApprovalReference: { type: ["string", "null"] }
+        legalApprovedAt: { type: ["string", "null"], format: date-time }
+        legalApprovedBy: { type: ["string", "null"] }
         termsUrl: { type: ["string", "null"] }
         robotsUrl: { type: ["string", "null"] }
         robotsAllowsIndexing: { type: ["boolean", "null"] }
@@ -1433,10 +1559,79 @@ components:
         apiDocsUrl: { type: ["string", "null"] }
         apiKeyRequired: { type: boolean }
         partnershipRequired: { type: boolean }
+        partnershipApproved: { type: boolean }
+        feedUrl: { type: ["string", "null"] }
+        feedFormat: { type: ["string", "null"], enum: [JSON, XML, RSS, SCHEMA_ORG, SITEMAP, null] }
+        fieldMap:
+          type: ["object", "null"]
+          additionalProperties: { type: string }
         imageMode: { type: string, enum: [IMAGE_PROXY_ALLOWED, IMAGE_URL_ONLY, NO_EXTERNAL_IMAGES] }
         refreshInterval: { type: ["integer", "null"] }
         rateLimit: { type: ["integer", "null"] }
         lastSuccess: { type: ["string", "null"], format: date-time }
         lastFailure: { type: ["string", "null"], format: date-time }
         lastError: { type: ["string", "null"] }
+        adapterAvailable: { type: boolean }
+        integrationConfigured: { type: boolean }
+        canEnable: { type: boolean }
+        operationalStatus: { type: string, enum: [DISABLED, NEEDS_LEGAL_APPROVAL, NEEDS_PARTNERSHIP, NEEDS_CREDENTIALS, NEEDS_FEED_URL, NEEDS_ROBOTS_CHECK, READY, ACTIVE, SYNC_ERROR] }
         externalListingCount: { type: integer }
+    SearchSourceUpdate:
+      type: object
+      properties:
+        enabled: { type: boolean }
+        legalStatus: { type: string, enum: [APPROVED, REVIEW_REQUIRED, PARTNERSHIP_REQUIRED, DISABLED] }
+        legalApproval: { type: boolean }
+        legalApprovalReference: { type: ["string", "null"], maxLength: 300 }
+        termsUrl: { type: ["string", "null"], maxLength: 1000 }
+        partnershipApproved: { type: boolean }
+        feedUrl: { type: ["string", "null"], maxLength: 2000 }
+        feedFormat: { type: ["string", "null"], enum: [JSON, XML, RSS, SCHEMA_ORG, SITEMAP, null] }
+        fieldMap:
+          type: ["object", "null"]
+          additionalProperties: { type: string }
+    SearchSourceSyncInput:
+      type: object
+      properties:
+        query: { type: string, maxLength: 160 }
+        limit: { type: integer, minimum: 1, maximum: 50 }
+    SearchSourceSyncResult:
+      type: object
+      required: [sourceId, received, inserted, updated, duplicates, rejected, normalized, normalizationSkipped, finishedAt]
+      properties:
+        sourceId: { type: string }
+        received: { type: integer }
+        inserted: { type: integer }
+        updated: { type: integer }
+        duplicates: { type: integer }
+        rejected: { type: integer }
+        normalized: { type: integer }
+        normalizationSkipped: { type: integer }
+        finishedAt: { type: string, format: date-time }
+    SearchSourceRobotsResult:
+      type: object
+      required: [sourceId, robotsUrl, allowed, checkedAt]
+      properties:
+        sourceId: { type: string }
+        robotsUrl: { type: string }
+        allowed: { type: boolean }
+        checkedAt: { type: string, format: date-time }
+    SearchPriceStatistics:
+      type: object
+      required: [groups]
+      properties:
+        groups:
+          type: array
+          items:
+            type: object
+            required: [currency, listingCount, sellifyCount, externalCount, sourceCount, minimum, median, average, maximum]
+            properties:
+              currency: { type: string }
+              listingCount: { type: integer }
+              sellifyCount: { type: integer }
+              externalCount: { type: integer }
+              sourceCount: { type: integer }
+              minimum: { type: number }
+              median: { type: number }
+              average: { type: number }
+              maximum: { type: number }

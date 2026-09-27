@@ -5,8 +5,11 @@
  * Sellify API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { SearchSourceAdminFeedFormat } from './searchSourceAdminFeedFormat';
+import type { SearchSourceAdminFieldMap } from './searchSourceAdminFieldMap';
 import type { SearchSourceAdminImageMode } from './searchSourceAdminImageMode';
 import type { SearchSourceAdminLegalStatus } from './searchSourceAdminLegalStatus';
+import type { SearchSourceAdminOperationalStatus } from './searchSourceAdminOperationalStatus';
 import type { SearchSourceAdminSourceType } from './searchSourceAdminSourceType';
 
 export interface SearchSourceAdmin {
@@ -20,6 +23,12 @@ export interface SearchSourceAdmin {
   legalStatus: SearchSourceAdminLegalStatus;
   legalApproval: boolean;
   /** @nullable */
+  legalApprovalReference?: string | null;
+  /** @nullable */
+  legalApprovedAt?: Date | null;
+  /** @nullable */
+  legalApprovedBy?: string | null;
+  /** @nullable */
   termsUrl?: string | null;
   /** @nullable */
   robotsUrl?: string | null;
@@ -31,6 +40,13 @@ export interface SearchSourceAdmin {
   apiDocsUrl?: string | null;
   apiKeyRequired: boolean;
   partnershipRequired: boolean;
+  partnershipApproved: boolean;
+  /** @nullable */
+  feedUrl?: string | null;
+  /** @nullable */
+  feedFormat?: SearchSourceAdminFeedFormat;
+  /** @nullable */
+  fieldMap?: SearchSourceAdminFieldMap;
   imageMode: SearchSourceAdminImageMode;
   /** @nullable */
   refreshInterval?: number | null;
@@ -42,5 +58,9 @@ export interface SearchSourceAdmin {
   lastFailure?: Date | null;
   /** @nullable */
   lastError?: string | null;
+  adapterAvailable: boolean;
+  integrationConfigured: boolean;
+  canEnable: boolean;
+  operationalStatus: SearchSourceAdminOperationalStatus;
   externalListingCount: number;
 }

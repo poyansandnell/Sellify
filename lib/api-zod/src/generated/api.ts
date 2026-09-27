@@ -275,6 +275,41 @@ export const SearchAllListingsResponse = zod.object({
 
 
 /**
+ * @summary Get cross-source price statistics without mixing currencies
+ */
+export const getSearchPriceStatisticsQueryQMax = 160;
+
+
+export const getSearchPriceStatisticsQueryCountryMin = 2;
+export const getSearchPriceStatisticsQueryCountryMax = 2;
+
+export const getSearchPriceStatisticsQueryConditionMax = 40;
+
+
+
+export const GetSearchPriceStatisticsQueryParams = zod.object({
+  "q": zod.coerce.string().max(getSearchPriceStatisticsQueryQMax).optional(),
+  "categoryId": zod.coerce.number().min(1).optional(),
+  "country": zod.coerce.string().min(getSearchPriceStatisticsQueryCountryMin).max(getSearchPriceStatisticsQueryCountryMax).optional(),
+  "condition": zod.coerce.string().max(getSearchPriceStatisticsQueryConditionMax).optional()
+})
+
+export const GetSearchPriceStatisticsResponse = zod.object({
+  "groups": zod.array(zod.object({
+  "currency": zod.string(),
+  "listingCount": zod.number(),
+  "sellifyCount": zod.number(),
+  "externalCount": zod.number(),
+  "sourceCount": zod.number(),
+  "minimum": zod.number(),
+  "median": zod.number(),
+  "average": zod.number(),
+  "maximum": zod.number()
+}))
+})
+
+
+/**
  * @summary Get a listing by id
  */
 export const GetListingParams = zod.object({
@@ -1498,6 +1533,9 @@ export const ListModerationSearchSourcesResponseItem = zod.object({
   "enabled": zod.boolean(),
   "legalStatus": zod.enum(['APPROVED', 'REVIEW_REQUIRED', 'PARTNERSHIP_REQUIRED', 'DISABLED']),
   "legalApproval": zod.boolean(),
+  "legalApprovalReference": zod.string().nullish(),
+  "legalApprovedAt": zod.coerce.date().nullish(),
+  "legalApprovedBy": zod.string().nullish(),
   "termsUrl": zod.string().nullish(),
   "robotsUrl": zod.string().nullish(),
   "robotsAllowsIndexing": zod.boolean().nullish(),
@@ -1505,15 +1543,133 @@ export const ListModerationSearchSourcesResponseItem = zod.object({
   "apiDocsUrl": zod.string().nullish(),
   "apiKeyRequired": zod.boolean(),
   "partnershipRequired": zod.boolean(),
+  "partnershipApproved": zod.boolean(),
+  "feedUrl": zod.string().nullish(),
+  "feedFormat": zod.union([zod.literal('JSON'),zod.literal('XML'),zod.literal('RSS'),zod.literal('SCHEMA_ORG'),zod.literal('SITEMAP'),zod.literal(null)]).nullish(),
+  "fieldMap": zod.record(zod.string(), zod.string()).nullish(),
   "imageMode": zod.enum(['IMAGE_PROXY_ALLOWED', 'IMAGE_URL_ONLY', 'NO_EXTERNAL_IMAGES']),
   "refreshInterval": zod.number().nullish(),
   "rateLimit": zod.number().nullish(),
   "lastSuccess": zod.coerce.date().nullish(),
   "lastFailure": zod.coerce.date().nullish(),
   "lastError": zod.string().nullish(),
+  "adapterAvailable": zod.boolean(),
+  "integrationConfigured": zod.boolean(),
+  "canEnable": zod.boolean(),
+  "operationalStatus": zod.enum(['DISABLED', 'NEEDS_LEGAL_APPROVAL', 'NEEDS_PARTNERSHIP', 'NEEDS_CREDENTIALS', 'NEEDS_FEED_URL', 'NEEDS_ROBOTS_CHECK', 'READY', 'ACTIVE', 'SYNC_ERROR']),
   "externalListingCount": zod.number()
 })
 export const ListModerationSearchSourcesResponse = zod.array(ListModerationSearchSourcesResponseItem)
+
+
+/**
+ * @summary Update a source's approval record, feed configuration, or active state
+ */
+export const UpdateModerationSearchSourceParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateModerationSearchSourceBodyLegalApprovalReferenceMax = 300;
+
+export const updateModerationSearchSourceBodyTermsUrlMax = 1000;
+
+export const updateModerationSearchSourceBodyFeedUrlMax = 2000;
+
+
+
+export const UpdateModerationSearchSourceBody = zod.object({
+  "enabled": zod.boolean().optional(),
+  "legalStatus": zod.enum(['APPROVED', 'REVIEW_REQUIRED', 'PARTNERSHIP_REQUIRED', 'DISABLED']).optional(),
+  "legalApproval": zod.boolean().optional(),
+  "legalApprovalReference": zod.string().max(updateModerationSearchSourceBodyLegalApprovalReferenceMax).nullish(),
+  "termsUrl": zod.string().max(updateModerationSearchSourceBodyTermsUrlMax).nullish(),
+  "partnershipApproved": zod.boolean().optional(),
+  "feedUrl": zod.string().max(updateModerationSearchSourceBodyFeedUrlMax).nullish(),
+  "feedFormat": zod.union([zod.literal('JSON'),zod.literal('XML'),zod.literal('RSS'),zod.literal('SCHEMA_ORG'),zod.literal('SITEMAP'),zod.literal(null)]).nullish(),
+  "fieldMap": zod.record(zod.string(), zod.string()).nullish()
+})
+
+export const UpdateModerationSearchSourceResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "country": zod.string(),
+  "baseUrl": zod.string().nullish(),
+  "sourceType": zod.enum(['API', 'FEED', 'INDEX', 'PARTNERSHIP_REQUIRED', 'DISABLED']),
+  "enabled": zod.boolean(),
+  "legalStatus": zod.enum(['APPROVED', 'REVIEW_REQUIRED', 'PARTNERSHIP_REQUIRED', 'DISABLED']),
+  "legalApproval": zod.boolean(),
+  "legalApprovalReference": zod.string().nullish(),
+  "legalApprovedAt": zod.coerce.date().nullish(),
+  "legalApprovedBy": zod.string().nullish(),
+  "termsUrl": zod.string().nullish(),
+  "robotsUrl": zod.string().nullish(),
+  "robotsAllowsIndexing": zod.boolean().nullish(),
+  "robotsCheckedAt": zod.coerce.date().nullish(),
+  "apiDocsUrl": zod.string().nullish(),
+  "apiKeyRequired": zod.boolean(),
+  "partnershipRequired": zod.boolean(),
+  "partnershipApproved": zod.boolean(),
+  "feedUrl": zod.string().nullish(),
+  "feedFormat": zod.union([zod.literal('JSON'),zod.literal('XML'),zod.literal('RSS'),zod.literal('SCHEMA_ORG'),zod.literal('SITEMAP'),zod.literal(null)]).nullish(),
+  "fieldMap": zod.record(zod.string(), zod.string()).nullish(),
+  "imageMode": zod.enum(['IMAGE_PROXY_ALLOWED', 'IMAGE_URL_ONLY', 'NO_EXTERNAL_IMAGES']),
+  "refreshInterval": zod.number().nullish(),
+  "rateLimit": zod.number().nullish(),
+  "lastSuccess": zod.coerce.date().nullish(),
+  "lastFailure": zod.coerce.date().nullish(),
+  "lastError": zod.string().nullish(),
+  "adapterAvailable": zod.boolean(),
+  "integrationConfigured": zod.boolean(),
+  "canEnable": zod.boolean(),
+  "operationalStatus": zod.enum(['DISABLED', 'NEEDS_LEGAL_APPROVAL', 'NEEDS_PARTNERSHIP', 'NEEDS_CREDENTIALS', 'NEEDS_FEED_URL', 'NEEDS_ROBOTS_CHECK', 'READY', 'ACTIVE', 'SYNC_ERROR']),
+  "externalListingCount": zod.number()
+})
+
+
+/**
+ * @summary Sync listings from an enabled and approved source (moderator only)
+ */
+export const SyncModerationSearchSourceParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const syncModerationSearchSourceBodyQueryMax = 160;
+
+export const syncModerationSearchSourceBodyLimitMax = 50;
+
+
+
+export const SyncModerationSearchSourceBody = zod.object({
+  "query": zod.string().max(syncModerationSearchSourceBodyQueryMax).optional(),
+  "limit": zod.number().min(1).max(syncModerationSearchSourceBodyLimitMax).optional()
+})
+
+export const SyncModerationSearchSourceResponse = zod.object({
+  "sourceId": zod.string(),
+  "received": zod.number(),
+  "inserted": zod.number(),
+  "updated": zod.number(),
+  "duplicates": zod.number(),
+  "rejected": zod.number(),
+  "normalized": zod.number(),
+  "normalizationSkipped": zod.number(),
+  "finishedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Check robots.txt for a legally approved index source
+ */
+export const CheckModerationSearchSourceRobotsParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const CheckModerationSearchSourceRobotsResponse = zod.object({
+  "sourceId": zod.string(),
+  "robotsUrl": zod.string(),
+  "allowed": zod.boolean(),
+  "checkedAt": zod.coerce.date()
+})
 
 
 export const RemoveModerationListingParams = zod.object({

@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useLocation, useSearch } from 'wouter';
 import { Filter, Info, ExternalLink, MapPin, Search as SearchIcon } from 'lucide-react';
 import {
+  useGetSearchPriceStatistics,
   useListCategories,
   useSearchAllListings,
   type SearchAllListingsSort,
@@ -100,6 +101,11 @@ export default function Search() {
     isError,
     refetch,
   } = useSearchAllListings(searchParams);
+  const { data: priceStatistics } = useGetSearchPriceStatistics({
+    q: q || undefined,
+    categoryId: category ? Number(category) : undefined,
+    country: locationFilters.country || undefined,
+  });
   const { data: categories } = useListCategories();
 
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
@@ -218,6 +224,52 @@ export default function Search() {
             </p>
           </div>
         )}
+
+        {priceStatistics?.groups.length ? (
+          <section className="mb-6 rounded-2xl border bg-card p-4 shadow-sm md:p-5" data-testid="section-search-price-statistics">
+            <div className="mb-4">
+              <h2 className="font-display text-lg font-bold">
+                {language === 'sv' ? 'Prisöversikt per valuta' : 'Price overview by currency'}
+              </h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {language === 'sv'
+                  ? 'Statistik från Sellify och godkända externa källor. Valutor omvandlas inte och visas separat.'
+                  : 'Statistics from Sellify and approved external sources. Currencies are not converted and remain separate.'}
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {priceStatistics.groups.map((group) => {
+                const locale = language === 'sv' ? 'sv-SE' : 'en-US';
+                return (
+                  <article
+                    key={group.currency}
+                    className="rounded-xl border bg-background p-4"
+                    data-testid={`card-price-statistics-${group.currency.toLowerCase()}`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="font-semibold">{group.currency}</h3>
+                      <span className="text-xs text-muted-foreground">
+                        {group.listingCount} {language === 'sv' ? 'annonser' : 'listings'}
+                      </span>
+                    </div>
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      {language === 'sv' ? 'Medianpris' : 'Median price'}
+                    </p>
+                    <p className="font-display text-2xl font-bold">
+                      {formatCurrency(String(group.median), group.currency, locale) ?? `${group.median} ${group.currency}`}
+                    </p>
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                      <span>{language === 'sv' ? 'Lägst' : 'Minimum'}: {formatCurrency(String(group.minimum), group.currency, locale) ?? group.minimum}</span>
+                      <span>{language === 'sv' ? 'Högst' : 'Maximum'}: {formatCurrency(String(group.maximum), group.currency, locale) ?? group.maximum}</span>
+                      <span>{language === 'sv' ? 'Sellify' : 'Sellify'}: {group.sellifyCount}</span>
+                      <span>{language === 'sv' ? 'Externa' : 'External'}: {group.externalCount}</span>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
 
         {isError ? (
           <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-10 text-center" data-testid="state-search-error">

@@ -24,6 +24,13 @@ export type ExternalImageMode =
   | "IMAGE_URL_ONLY"
   | "NO_EXTERNAL_IMAGES";
 
+export type ExternalFeedFormat =
+  | "JSON"
+  | "XML"
+  | "RSS"
+  | "SCHEMA_ORG"
+  | "SITEMAP";
+
 export const externalSourceCatalog = [
   {
     id: "tradera",
@@ -317,14 +324,25 @@ export async function seedExternalSourceCatalog(): Promise<void> {
 export function isExternalSourceSearchable(
   source: Pick<
     ExternalSource,
-    "enabled" | "legalStatus" | "legalApproval" | "sourceType"
+    | "enabled"
+    | "legalStatus"
+    | "legalApproval"
+    | "legalApprovalReference"
+    | "legalApprovedAt"
+    | "partnershipRequired"
+    | "partnershipApproved"
+    | "sourceType"
   >,
 ): boolean {
   return (
     source.enabled &&
     source.legalStatus === "APPROVED" &&
     source.legalApproval &&
-    source.sourceType !== "DISABLED"
+    Boolean(source.legalApprovalReference?.trim()) &&
+    Boolean(source.legalApprovedAt) &&
+    (!source.partnershipRequired || source.partnershipApproved) &&
+    source.sourceType !== "DISABLED" &&
+    source.sourceType !== "PARTNERSHIP_REQUIRED"
   );
 }
 
@@ -335,11 +353,26 @@ export function assertSourceMayIngest(
   if (!source.enabled || source.legalStatus !== "APPROVED" || !source.legalApproval) {
     throw new Error(`Source ${source.id} is not legally approved and enabled`);
   }
+  if (!source.legalApprovalReference?.trim() || !source.legalApprovedAt) {
+    throw new Error(`Source ${source.id} has no documented legal approval`);
+  }
   if (source.sourceType === "DISABLED") {
     throw new Error(`Source ${source.id} is disabled`);
   }
+  if (source.sourceType === "PARTNERSHIP_REQUIRED") {
+    throw new Error(`Source ${source.id} has no approved adapter`);
+  }
+  if (source.partnershipRequired && !source.partnershipApproved) {
+    throw new Error(`Source ${source.id} requires an approved partnership`);
+  }
   if (source.apiKeyRequired && !options.hasApiCredential) {
     throw new Error(`Source ${source.id} requires an API credential`);
+  }
+  if (
+    (source.sourceType === "FEED" || source.sourceType === "INDEX") &&
+    (!source.feedUrl || !source.feedFormat)
+  ) {
+    throw new Error(`Source ${source.id} requires a configured feed URL and format`);
   }
   if (
     source.sourceType === "INDEX" &&
@@ -380,57 +413,14 @@ export type NormalizedExternalListing = {
   rawDataHash?: string | null;
   productFingerprint?: string | null;
   normalizationConfidence?: number | null;
-};
-
-export type SourceAdapter = {
-  sourceId: string;
-  sourceName: string;
-  country: string;
-  sourceType: ExternalSourceType;
-  enabled: boolean;
-  requiresApiKey: boolean;
-  requiresPartnership: boolean;
-  fetchListings(options?: { cursor?: string }): Promise<NormalizedExternalListing[]>;
-  fetchListing(externalId: string): Promise<NormalizedExternalListing | null>;
-  normalizeListing(rawListing: unknown): NormalizedExternalListing;
-  refreshListing(externalId: string): Promise<NormalizedExternalListing | null>;
-  markUnavailable(externalId: string): Promise<void>;
-  getOriginalUrl(externalId: string): string;
+  status?: "ACTIVE" | "SOLD" | "REMOVED" | "UNKNOWN";
 };
 
 export class SourceIntegrationNotConfiguredError extends Error {
   readonly code = "SOURCE_INTEGRATION_NOT_CONFIGURED";
 
   constructor(sourceId: string) {
-    super(`The ${sourceId} adapter is a placeholder and cannot fetch listings`);
+    super(`The ${sourceId} adapter is missing required configuration`);
     this.name = "SourceIntegrationNotConfiguredError";
   }
 }
-
-function placeholderAdapter(
-  source: (typeof externalSourceCatalog)[number],
-): SourceAdapter {
-  const unavailable = (): never => {
-    throw new SourceIntegrationNotConfiguredError(source.id);
-  };
-
-  return {
-    sourceId: source.id,
-    sourceName: source.name,
-    country: source.country,
-    sourceType: source.sourceType as ExternalSourceType,
-    enabled: false,
-    requiresApiKey: source.apiKeyRequired,
-    requiresPartnership: source.partnershipRequired,
-    fetchListings: async () => unavailable(),
-    fetchListing: async () => unavailable(),
-    normalizeListing: () => unavailable(),
-    refreshListing: async () => unavailable(),
-    markUnavailable: async () => unavailable(),
-    getOriginalUrl: () => unavailable(),
-  };
-}
-
-export const sourceAdapters: ReadonlyMap<string, SourceAdapter> = new Map(
-  externalSourceCatalog.map((source) => [source.id, placeholderAdapter(source)]),
-);

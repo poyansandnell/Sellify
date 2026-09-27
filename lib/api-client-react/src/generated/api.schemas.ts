@@ -827,6 +827,25 @@ export const SearchSourceAdminLegalStatus = {
   DISABLED: 'DISABLED',
 } as const;
 
+/**
+ * @nullable
+ */
+export type SearchSourceAdminFeedFormat = typeof SearchSourceAdminFeedFormat[keyof typeof SearchSourceAdminFeedFormat] | null;
+
+
+export const SearchSourceAdminFeedFormat = {
+  JSON: 'JSON',
+  XML: 'XML',
+  RSS: 'RSS',
+  SCHEMA_ORG: 'SCHEMA_ORG',
+  SITEMAP: 'SITEMAP',
+} as const;
+
+/**
+ * @nullable
+ */
+export type SearchSourceAdminFieldMap = {[key: string]: string} | null;
+
 export type SearchSourceAdminImageMode = typeof SearchSourceAdminImageMode[keyof typeof SearchSourceAdminImageMode];
 
 
@@ -834,6 +853,21 @@ export const SearchSourceAdminImageMode = {
   IMAGE_PROXY_ALLOWED: 'IMAGE_PROXY_ALLOWED',
   IMAGE_URL_ONLY: 'IMAGE_URL_ONLY',
   NO_EXTERNAL_IMAGES: 'NO_EXTERNAL_IMAGES',
+} as const;
+
+export type SearchSourceAdminOperationalStatus = typeof SearchSourceAdminOperationalStatus[keyof typeof SearchSourceAdminOperationalStatus];
+
+
+export const SearchSourceAdminOperationalStatus = {
+  DISABLED: 'DISABLED',
+  NEEDS_LEGAL_APPROVAL: 'NEEDS_LEGAL_APPROVAL',
+  NEEDS_PARTNERSHIP: 'NEEDS_PARTNERSHIP',
+  NEEDS_CREDENTIALS: 'NEEDS_CREDENTIALS',
+  NEEDS_FEED_URL: 'NEEDS_FEED_URL',
+  NEEDS_ROBOTS_CHECK: 'NEEDS_ROBOTS_CHECK',
+  READY: 'READY',
+  ACTIVE: 'ACTIVE',
+  SYNC_ERROR: 'SYNC_ERROR',
 } as const;
 
 export interface SearchSourceAdmin {
@@ -847,6 +881,12 @@ export interface SearchSourceAdmin {
   legalStatus: SearchSourceAdminLegalStatus;
   legalApproval: boolean;
   /** @nullable */
+  legalApprovalReference?: string | null;
+  /** @nullable */
+  legalApprovedAt?: string | null;
+  /** @nullable */
+  legalApprovedBy?: string | null;
+  /** @nullable */
   termsUrl?: string | null;
   /** @nullable */
   robotsUrl?: string | null;
@@ -858,6 +898,13 @@ export interface SearchSourceAdmin {
   apiDocsUrl?: string | null;
   apiKeyRequired: boolean;
   partnershipRequired: boolean;
+  partnershipApproved: boolean;
+  /** @nullable */
+  feedUrl?: string | null;
+  /** @nullable */
+  feedFormat?: SearchSourceAdminFeedFormat;
+  /** @nullable */
+  fieldMap?: SearchSourceAdminFieldMap;
   imageMode: SearchSourceAdminImageMode;
   /** @nullable */
   refreshInterval?: number | null;
@@ -869,7 +916,111 @@ export interface SearchSourceAdmin {
   lastFailure?: string | null;
   /** @nullable */
   lastError?: string | null;
+  adapterAvailable: boolean;
+  integrationConfigured: boolean;
+  canEnable: boolean;
+  operationalStatus: SearchSourceAdminOperationalStatus;
   externalListingCount: number;
+}
+
+export type SearchSourceUpdateLegalStatus = typeof SearchSourceUpdateLegalStatus[keyof typeof SearchSourceUpdateLegalStatus];
+
+
+export const SearchSourceUpdateLegalStatus = {
+  APPROVED: 'APPROVED',
+  REVIEW_REQUIRED: 'REVIEW_REQUIRED',
+  PARTNERSHIP_REQUIRED: 'PARTNERSHIP_REQUIRED',
+  DISABLED: 'DISABLED',
+} as const;
+
+/**
+ * @nullable
+ */
+export type SearchSourceUpdateFeedFormat = typeof SearchSourceUpdateFeedFormat[keyof typeof SearchSourceUpdateFeedFormat] | null;
+
+
+export const SearchSourceUpdateFeedFormat = {
+  JSON: 'JSON',
+  XML: 'XML',
+  RSS: 'RSS',
+  SCHEMA_ORG: 'SCHEMA_ORG',
+  SITEMAP: 'SITEMAP',
+} as const;
+
+/**
+ * @nullable
+ */
+export type SearchSourceUpdateFieldMap = {[key: string]: string} | null;
+
+export interface SearchSourceUpdate {
+  enabled?: boolean;
+  legalStatus?: SearchSourceUpdateLegalStatus;
+  legalApproval?: boolean;
+  /**
+     * @maxLength 300
+     * @nullable
+     */
+  legalApprovalReference?: string | null;
+  /**
+     * @maxLength 1000
+     * @nullable
+     */
+  termsUrl?: string | null;
+  partnershipApproved?: boolean;
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  feedUrl?: string | null;
+  /** @nullable */
+  feedFormat?: SearchSourceUpdateFeedFormat;
+  /** @nullable */
+  fieldMap?: SearchSourceUpdateFieldMap;
+}
+
+export interface SearchSourceSyncInput {
+  /** @maxLength 160 */
+  query?: string;
+  /**
+     * @minimum 1
+     * @maximum 50
+     */
+  limit?: number;
+}
+
+export interface SearchSourceSyncResult {
+  sourceId: string;
+  received: number;
+  inserted: number;
+  updated: number;
+  duplicates: number;
+  rejected: number;
+  normalized: number;
+  normalizationSkipped: number;
+  finishedAt: string;
+}
+
+export interface SearchSourceRobotsResult {
+  sourceId: string;
+  robotsUrl: string;
+  allowed: boolean;
+  checkedAt: string;
+}
+
+export type SearchPriceStatisticsGroupsItem = {
+  currency: string;
+  listingCount: number;
+  sellifyCount: number;
+  externalCount: number;
+  sourceCount: number;
+  minimum: number;
+  median: number;
+  average: number;
+  maximum: number;
+};
+
+export interface SearchPriceStatistics {
+  groups: SearchPriceStatisticsGroupsItem[];
 }
 
 export type ListListingsParams = {
@@ -960,6 +1111,26 @@ export const SearchAllListingsSort = {
   price_asc: 'price_asc',
   price_desc: 'price_desc',
 } as const;
+
+export type GetSearchPriceStatisticsParams = {
+/**
+ * @maxLength 160
+ */
+q?: string;
+/**
+ * @minimum 1
+ */
+categoryId?: number;
+/**
+ * @minLength 2
+ * @maxLength 2
+ */
+country?: string;
+/**
+ * @maxLength 40
+ */
+condition?: string;
+};
 
 export type GetHomeFeedParams = {
 city?: string;

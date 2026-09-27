@@ -35,6 +35,7 @@ import type {
   ErrorEnvelope,
   FavoriteState,
   GetHomeFeedParams,
+  GetSearchPriceStatisticsParams,
   HealthStatus,
   HomeFeed,
   ListListingsParams,
@@ -52,7 +53,12 @@ import type {
   ProfileUpdate,
   PushTokenInput,
   SearchAllListingsParams,
+  SearchPriceStatistics,
   SearchSourceAdmin,
+  SearchSourceRobotsResult,
+  SearchSourceSyncInput,
+  SearchSourceSyncResult,
+  SearchSourceUpdate,
   SellerPublic,
   SeoLocationNode,
   TermsAcceptance,
@@ -473,6 +479,90 @@ export function useSearchAllListings<TData = Awaited<ReturnType<typeof searchAll
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getSearchAllListingsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetSearchPriceStatisticsUrl = (params?: GetSearchPriceStatisticsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/search/price-statistics?${stringifiedParams}` : `/api/search/price-statistics`
+}
+
+/**
+ * @summary Get cross-source price statistics without mixing currencies
+ */
+export const getSearchPriceStatistics = async (params?: GetSearchPriceStatisticsParams, options?: RequestInit): Promise<SearchPriceStatistics> => {
+
+  return customFetch<SearchPriceStatistics>(getGetSearchPriceStatisticsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSearchPriceStatisticsQueryKey = (params?: GetSearchPriceStatisticsParams,) => {
+    return [
+    `/api/search/price-statistics`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSearchPriceStatisticsQueryOptions = <TData = Awaited<ReturnType<typeof getSearchPriceStatistics>>, TError = ErrorType<unknown>>(params?: GetSearchPriceStatisticsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSearchPriceStatistics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSearchPriceStatisticsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSearchPriceStatistics>>> = ({ signal }) => getSearchPriceStatistics(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSearchPriceStatistics>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSearchPriceStatisticsQueryResult = NonNullable<Awaited<ReturnType<typeof getSearchPriceStatistics>>>
+export type GetSearchPriceStatisticsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get cross-source price statistics without mixing currencies
+ */
+
+export function useGetSearchPriceStatistics<TData = Awaited<ReturnType<typeof getSearchPriceStatistics>>, TError = ErrorType<unknown>>(
+ params?: GetSearchPriceStatisticsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSearchPriceStatistics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSearchPriceStatisticsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -3182,6 +3272,221 @@ export function useListModerationSearchSources<TData = Awaited<ReturnType<typeof
 
 
 
+
+export const getUpdateModerationSearchSourceUrl = (id: string,) => {
+
+
+
+
+  return `/api/moderation/search-sources/${id}`
+}
+
+/**
+ * @summary Update a source's approval record, feed configuration, or active state
+ */
+export const updateModerationSearchSource = async (id: string,
+    searchSourceUpdate: SearchSourceUpdate, options?: RequestInit): Promise<SearchSourceAdmin> => {
+
+  return customFetch<SearchSourceAdmin>(getUpdateModerationSearchSourceUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(searchSourceUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateModerationSearchSourceMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateModerationSearchSource>>, TError,{id: string;data: BodyType<SearchSourceUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateModerationSearchSource>>, TError,{id: string;data: BodyType<SearchSourceUpdate>}, TContext> => {
+
+const mutationKey = ['updateModerationSearchSource'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateModerationSearchSource>>, {id: string;data: BodyType<SearchSourceUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateModerationSearchSource(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateModerationSearchSourceMutationResult = NonNullable<Awaited<ReturnType<typeof updateModerationSearchSource>>>
+    export type UpdateModerationSearchSourceMutationBody = BodyType<SearchSourceUpdate>
+    export type UpdateModerationSearchSourceMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Update a source's approval record, feed configuration, or active state
+ */
+export const useUpdateModerationSearchSource = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateModerationSearchSource>>, TError,{id: string;data: BodyType<SearchSourceUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateModerationSearchSource>>,
+        TError,
+        {id: string;data: BodyType<SearchSourceUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateModerationSearchSourceMutationOptions(options));
+    }
+
+export const getSyncModerationSearchSourceUrl = (id: string,) => {
+
+
+
+
+  return `/api/moderation/search-sources/${id}`
+}
+
+/**
+ * @summary Sync listings from an enabled and approved source (moderator only)
+ */
+export const syncModerationSearchSource = async (id: string,
+    searchSourceSyncInput: SearchSourceSyncInput, options?: RequestInit): Promise<SearchSourceSyncResult> => {
+
+  return customFetch<SearchSourceSyncResult>(getSyncModerationSearchSourceUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(searchSourceSyncInput)
+  }
+);}
+
+
+
+
+
+export const getSyncModerationSearchSourceMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncModerationSearchSource>>, TError,{id: string;data: BodyType<SearchSourceSyncInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof syncModerationSearchSource>>, TError,{id: string;data: BodyType<SearchSourceSyncInput>}, TContext> => {
+
+const mutationKey = ['syncModerationSearchSource'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof syncModerationSearchSource>>, {id: string;data: BodyType<SearchSourceSyncInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  syncModerationSearchSource(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SyncModerationSearchSourceMutationResult = NonNullable<Awaited<ReturnType<typeof syncModerationSearchSource>>>
+    export type SyncModerationSearchSourceMutationBody = BodyType<SearchSourceSyncInput>
+    export type SyncModerationSearchSourceMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Sync listings from an enabled and approved source (moderator only)
+ */
+export const useSyncModerationSearchSource = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncModerationSearchSource>>, TError,{id: string;data: BodyType<SearchSourceSyncInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof syncModerationSearchSource>>,
+        TError,
+        {id: string;data: BodyType<SearchSourceSyncInput>},
+        TContext
+      > => {
+      return useMutation(getSyncModerationSearchSourceMutationOptions(options));
+    }
+
+export const getCheckModerationSearchSourceRobotsUrl = (id: string,) => {
+
+
+
+
+  return `/api/moderation/search-sources/${id}/check-robots`
+}
+
+/**
+ * @summary Check robots.txt for a legally approved index source
+ */
+export const checkModerationSearchSourceRobots = async (id: string, options?: RequestInit): Promise<SearchSourceRobotsResult> => {
+
+  return customFetch<SearchSourceRobotsResult>(getCheckModerationSearchSourceRobotsUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCheckModerationSearchSourceRobotsMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkModerationSearchSourceRobots>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof checkModerationSearchSourceRobots>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['checkModerationSearchSourceRobots'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof checkModerationSearchSourceRobots>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  checkModerationSearchSourceRobots(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CheckModerationSearchSourceRobotsMutationResult = NonNullable<Awaited<ReturnType<typeof checkModerationSearchSourceRobots>>>
+
+    export type CheckModerationSearchSourceRobotsMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Check robots.txt for a legally approved index source
+ */
+export const useCheckModerationSearchSourceRobots = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkModerationSearchSourceRobots>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof checkModerationSearchSourceRobots>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getCheckModerationSearchSourceRobotsMutationOptions(options));
+    }
 
 export const getRemoveModerationListingUrl = (id: number,) => {
 

@@ -66,6 +66,7 @@ export const externalListings = pgTable(
       table.sourceId,
       table.externalId,
     ),
+    uniqueIndex("external_listings_original_url_idx").on(table.originalUrl),
     index("external_listings_status_published_idx").on(
       table.status,
       table.publishedAt,

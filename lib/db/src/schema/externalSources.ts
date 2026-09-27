@@ -2,6 +2,7 @@ import {
   boolean,
   index,
   integer,
+  jsonb,
   pgTable,
   text,
   timestamp,
@@ -18,6 +19,9 @@ export const externalSources = pgTable(
     enabled: boolean("enabled").notNull().default(false),
     legalStatus: text("legal_status").notNull().default("REVIEW_REQUIRED"),
     legalApproval: boolean("legal_approval").notNull().default(false),
+    legalApprovalReference: text("legal_approval_reference"),
+    legalApprovedAt: timestamp("legal_approved_at", { withTimezone: true }),
+    legalApprovedBy: text("legal_approved_by"),
     termsUrl: text("terms_url"),
     robotsUrl: text("robots_url"),
     robotsAllowsIndexing: boolean("robots_allows_indexing"),
@@ -27,6 +31,10 @@ export const externalSources = pgTable(
     partnershipRequired: boolean("partnership_required")
       .notNull()
       .default(false),
+    partnershipApproved: boolean("partnership_approved").notNull().default(false),
+    feedUrl: text("feed_url"),
+    feedFormat: text("feed_format"),
+    fieldMap: jsonb("field_map").$type<Record<string, string> | null>(),
     imageMode: text("image_mode").notNull().default("NO_EXTERNAL_IMAGES"),
     refreshInterval: integer("refresh_interval"),
     rateLimit: integer("rate_limit"),

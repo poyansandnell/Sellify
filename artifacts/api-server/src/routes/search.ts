@@ -6,6 +6,7 @@ import {
   eq,
   gte,
   ilike,
+  isNotNull,
   isNull,
   lte,
   ne,
@@ -19,6 +20,8 @@ import {
   listings,
 } from "@workspace/db/schema";
 import {
+  GetSearchPriceStatisticsQueryParams,
+  GetSearchPriceStatisticsResponse,
   SearchAllListingsQueryParams,
   SearchAllListingsResponse,
 } from "@workspace/api-zod";
@@ -49,6 +52,56 @@ function toIsoDate(value: unknown): string | null {
       ? new Date(value)
       : null;
   return date && Number.isFinite(date.getTime()) ? date.toISOString() : null;
+}
+
+function approvedExternalSourceConditions() {
+  const conditions = [
+    eq(externalSources.enabled, true),
+    eq(externalSources.legalStatus, "APPROVED"),
+    eq(externalSources.legalApproval, true),
+    isNotNull(externalSources.legalApprovalReference),
+    isNotNull(externalSources.legalApprovedAt),
+    or(
+      eq(externalSources.partnershipRequired, false),
+      eq(externalSources.partnershipApproved, true),
+    )!,
+    ne(externalSources.sourceType, "DISABLED"),
+    ne(externalSources.sourceType, "PARTNERSHIP_REQUIRED"),
+  ];
+  conditions.push(
+    or(
+      and(
+        eq(externalSources.sourceType, "API"),
+        or(
+          eq(externalSources.id, "tradera"),
+          eq(externalSources.id, "ebay"),
+        )!,
+      ),
+      and(
+        eq(externalSources.sourceType, "FEED"),
+        isNotNull(externalSources.feedUrl),
+        isNotNull(externalSources.feedFormat),
+      ),
+      and(
+        eq(externalSources.sourceType, "INDEX"),
+        isNotNull(externalSources.feedUrl),
+        isNotNull(externalSources.feedFormat),
+        eq(externalSources.robotsAllowsIndexing, true),
+        isNotNull(externalSources.robotsCheckedAt),
+      ),
+    )!,
+  );
+  if (!process.env.TRADERA_APP_ID || !process.env.TRADERA_APP_KEY) {
+    conditions.push(ne(externalSources.id, "tradera"));
+  }
+  if (
+    !process.env.EBAY_CLIENT_ID ||
+    !process.env.EBAY_CLIENT_SECRET ||
+    !process.env.EBAY_MARKETPLACE_ID
+  ) {
+    conditions.push(ne(externalSources.id, "ebay"));
+  }
+  return conditions;
 }
 
 router.get("/search", async (req: Request, res: Response): Promise<void> => {
@@ -126,12 +179,7 @@ router.get("/search", async (req: Request, res: Response): Promise<void> => {
     sellifyConditions.push(eq(listings.sellerId, sellerId.trim()));
   }
 
-  const sourceVisibilityConditions = [
-    eq(externalSources.enabled, true),
-    eq(externalSources.legalStatus, "APPROVED"),
-    eq(externalSources.legalApproval, true),
-    ne(externalSources.sourceType, "DISABLED"),
-  ];
+  const sourceVisibilityConditions = approvedExternalSourceConditions();
   const externalConditions = [
     eq(externalListings.status, "ACTIVE"),
     ...sourceVisibilityConditions,
@@ -226,6 +274,10 @@ router.get("/search", async (req: Request, res: Response): Promise<void> => {
               sourceEnabled: externalSources.enabled,
               sourceLegalStatus: externalSources.legalStatus,
               sourceLegalApproval: externalSources.legalApproval,
+              sourceLegalApprovalReference: externalSources.legalApprovalReference,
+              sourceLegalApprovedAt: externalSources.legalApprovedAt,
+              sourcePartnershipRequired: externalSources.partnershipRequired,
+              sourcePartnershipApproved: externalSources.partnershipApproved,
               sourceType: externalSources.sourceType,
               title: externalListings.title,
               price: externalListings.price,
@@ -298,6 +350,10 @@ router.get("/search", async (req: Request, res: Response): Promise<void> => {
         enabled: listing.sourceEnabled,
         legalStatus: listing.sourceLegalStatus,
         legalApproval: listing.sourceLegalApproval,
+        legalApprovalReference: listing.sourceLegalApprovalReference,
+        legalApprovedAt: listing.sourceLegalApprovedAt,
+        partnershipRequired: listing.sourcePartnershipRequired,
+        partnershipApproved: listing.sourcePartnershipApproved,
         sourceType: listing.sourceType,
       };
       if (!isExternalSourceSearchable(source)) return null;
@@ -364,5 +420,124 @@ router.get("/search", async (req: Request, res: Response): Promise<void> => {
 
   res.json(SearchAllListingsResponse.parse(response));
 });
+
+router.get(
+  "/search/price-statistics",
+  async (req: Request, res: Response): Promise<void> => {
+    const parsed = GetSearchPriceStatisticsQueryParams.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const { q, categoryId, country, condition } = parsed.data;
+    const pattern = q?.trim()
+      ? `%${escapeLikePattern(q.trim())}%`
+      : undefined;
+
+    const sellifyConditions = [
+      eq(listings.status, "active"),
+      isNull(listings.removedAt),
+      isNotNull(listings.price),
+      isNotNull(listings.currency),
+    ];
+    if (pattern) {
+      sellifyConditions.push(
+        or(
+          ilike(listings.title, pattern),
+          ilike(listings.description, pattern),
+          ilike(listings.brand, pattern),
+          ilike(listings.model, pattern),
+        )!,
+      );
+    }
+    if (categoryId !== undefined) {
+      sellifyConditions.push(eq(listings.categoryId, categoryId));
+    }
+    if (country?.trim()) {
+      sellifyConditions.push(eq(listings.country, country.trim().toUpperCase()));
+    }
+    if (condition?.trim()) {
+      sellifyConditions.push(eq(listings.condition, condition.trim()));
+    }
+
+    const externalConditions = [
+      eq(externalListings.status, "ACTIVE"),
+      isNotNull(externalListings.price),
+      isNotNull(externalListings.currency),
+      ...approvedExternalSourceConditions(),
+    ];
+    if (pattern) {
+      externalConditions.push(
+        or(
+          ilike(externalListings.title, pattern),
+          ilike(externalListings.description, pattern),
+          ilike(externalListings.brand, pattern),
+          ilike(externalListings.model, pattern),
+        )!,
+      );
+    }
+    if (categoryId !== undefined) {
+      externalConditions.push(eq(externalListings.categoryId, categoryId));
+    }
+    if (country?.trim()) {
+      externalConditions.push(
+        eq(externalListings.country, country.trim().toUpperCase()),
+      );
+    }
+    if (condition?.trim()) {
+      externalConditions.push(eq(externalListings.condition, condition.trim()));
+    }
+
+    const sellifyWhere = and(...sellifyConditions)!;
+    const externalWhere = and(...externalConditions)!;
+    const result = await db.execute(sql`
+      SELECT
+        currency,
+        COUNT(*)::int AS listing_count,
+        COUNT(*) FILTER (WHERE source_type = 'sellify')::int AS sellify_count,
+        COUNT(*) FILTER (WHERE source_type = 'external')::int AS external_count,
+        COUNT(DISTINCT source_id)::int AS source_count,
+        MIN(price)::double precision AS minimum,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY price)::double precision AS median,
+        AVG(price)::double precision AS average,
+        MAX(price)::double precision AS maximum
+      FROM (
+        SELECT
+          UPPER(${listings.currency}) AS currency,
+          ${listings.price}::double precision AS price,
+          'sellify'::text AS source_id,
+          'sellify'::text AS source_type
+        FROM ${listings}
+        WHERE ${sellifyWhere}
+        UNION ALL
+        SELECT
+          UPPER(${externalListings.currency}) AS currency,
+          ${externalListings.price}::double precision AS price,
+          ${externalListings.sourceId} AS source_id,
+          'external'::text AS source_type
+        FROM ${externalListings}
+        INNER JOIN ${externalSources}
+          ON ${externalSources.id} = ${externalListings.sourceId}
+        WHERE ${externalWhere}
+      ) AS combined_prices
+      GROUP BY currency
+      ORDER BY listing_count DESC, currency ASC
+    `);
+    const response = {
+      groups: result.rows.map((row) => ({
+        currency: String(row.currency),
+        listingCount: Number(row.listing_count),
+        sellifyCount: Number(row.sellify_count),
+        externalCount: Number(row.external_count),
+        sourceCount: Number(row.source_count),
+        minimum: Number(row.minimum),
+        median: Number(row.median),
+        average: Number(row.average),
+        maximum: Number(row.maximum),
+      })),
+    };
+    res.json(GetSearchPriceStatisticsResponse.parse(response));
+  },
+);
 
 export default router;
