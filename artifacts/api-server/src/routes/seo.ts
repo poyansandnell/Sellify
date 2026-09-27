@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, isNull, sql } from "drizzle-orm";
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db } from "@workspace/db";
 import { categories, listings, profiles } from "@workspace/db/schema";
@@ -8,7 +8,7 @@ import { logger } from "../lib/logger";
 const router: IRouter = Router();
 const PRODUCTION_ORIGIN = "https://attached-assets-poyansandnell.replit.app";
 const CATEGORY_INDEX_THRESHOLD = 5;
-const SITEMAP_LISTING_LIMIT = 50_000;
+const SITEMAP_LISTINGS_PER_FILE = 45_000;
 
 type ListingSeoRow = {
   listing: typeof listings.$inferSelect;
@@ -268,14 +268,26 @@ function htmlDocument(options: {
 </html>`;
 }
 
-function notFoundPage(req: Request): string {
+function notFoundPage(req: Request, kind: "listing" | "category" = "listing"): string {
   const origin = siteOrigin(req);
+  const title =
+    kind === "listing"
+      ? "Annonsen är såld eller inte längre tillgänglig | Sellify"
+      : "Kategorin hittades inte | Sellify";
+  const heading =
+    kind === "listing"
+      ? "Den här varan är såld eller inte längre tillgänglig"
+      : "Kategorin hittades inte";
+  const description =
+    kind === "listing"
+      ? "Annonsen är såld eller inte längre tillgänglig. Se andra aktuella annonser på Sellify."
+      : "Den här kategorin finns inte längre på Sellify.";
   return htmlDocument({
-    title: "Annonsen hittades inte | Sellify",
-    description: "Annonsen finns inte längre tillgänglig på Sellify.",
+    title,
+    description,
     canonical: `${origin}${req.path}`,
     robots: "noindex, nofollow",
-    body: `<main class="container"><h1>Annonsen hittades inte</h1><p class="details">Den här annonsen är inte längre tillgänglig.</p><a class="button" href="/">Se andra annonser</a></main>`,
+    body: `<main class="container"><h1>${escapeHtml(heading)}</h1><p class="details">${escapeHtml(description)}</p><a class="button" href="/">Se aktuella annonser</a></main>`,
   });
 }
 
@@ -456,7 +468,7 @@ router.get("/category/:slug", async (req: Request, res: Response) => {
       .limit(1);
 
     if (!category) {
-      res.status(404).type("html").send(notFoundPage(req));
+      res.status(404).type("html").send(notFoundPage(req, "category"));
       return;
     }
 
@@ -536,42 +548,60 @@ router.get("/category/:slug", async (req: Request, res: Response) => {
 router.get("/sitemap.xml", async (req: Request, res: Response) => {
   try {
     const origin = siteOrigin(req);
-    const [activeListings, activeCategories] = await Promise.all([
-      db
-        .select({
-          slug: listings.slug,
-          lastModified: listings.publishedAt,
-        })
-        .from(listings)
-        .leftJoin(profiles, eq(profiles.id, listings.sellerId))
-        .where(
-          and(
-            eq(listings.status, "active"),
-            isNull(listings.removedAt),
-            isNull(profiles.suspendedAt),
-          ),
-        )
-        .orderBy(desc(listings.publishedAt))
-        .limit(SITEMAP_LISTING_LIMIT),
-      db
-        .select({
-          slug: categories.slug,
-          listingCount: sql<number>`count(${listings.id})::int`,
-        })
-        .from(categories)
-        .leftJoin(
-          listings,
-          and(
-            eq(listings.categoryId, categories.id),
-            eq(listings.status, "active"),
-            isNull(listings.removedAt),
-          ),
-        )
-        .leftJoin(profiles, eq(profiles.id, listings.sellerId))
-        .where(isNull(profiles.suspendedAt))
-        .groupBy(categories.id)
-        .having(gte(sql`count(${listings.id})`, CATEGORY_INDEX_THRESHOLD)),
-    ]);
+    const [{ total }] = await db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(listings)
+      .leftJoin(profiles, eq(profiles.id, listings.sellerId))
+      .where(
+        and(
+          eq(listings.status, "active"),
+          isNull(listings.removedAt),
+          isNull(profiles.suspendedAt),
+        ),
+      );
+    const listingSitemapCount = Math.ceil(total / SITEMAP_LISTINGS_PER_FILE);
+    const lastmod = new Date().toISOString();
+    const sitemaps = [
+      `<sitemap><loc>${escapeXml(`${origin}/sitemap-static.xml`)}</loc><lastmod>${lastmod}</lastmod></sitemap>`,
+      ...Array.from({ length: listingSitemapCount }, (_, page) =>
+        `<sitemap><loc>${escapeXml(`${origin}/sitemap-listings/${page}.xml`)}</loc><lastmod>${lastmod}</lastmod></sitemap>`,
+      ),
+    ];
+
+    res
+      .status(200)
+      .type("application/xml")
+      .set("Cache-Control", "public, max-age=300")
+      .send(
+        `<?xml version="1.0" encoding="UTF-8"?><sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${sitemaps.join("")}</sitemapindex>`,
+      );
+  } catch (error) {
+    logger.error({ err: error }, "Could not generate sitemap");
+    res.status(500).type("text/plain").send("Sitemap generation failed");
+  }
+});
+
+router.get("/sitemap-static.xml", async (req: Request, res: Response) => {
+  try {
+    const origin = siteOrigin(req);
+    const categoriesWithInventory = await db
+      .select({
+        slug: categories.slug,
+        listingCount: sql<number>`count(${listings.id})::int`,
+      })
+      .from(categories)
+      .leftJoin(
+        listings,
+        and(
+          eq(listings.categoryId, categories.id),
+          eq(listings.status, "active"),
+          isNull(listings.removedAt),
+        ),
+      )
+      .leftJoin(profiles, eq(profiles.id, listings.sellerId))
+      .where(isNull(profiles.suspendedAt))
+      .groupBy(categories.id)
+      .having(gte(sql`count(${listings.id})`, CATEGORY_INDEX_THRESHOLD));
 
     const fixedPages = ["/", "/support", "/terms", "/privacy"];
     const urls = [
@@ -579,17 +609,56 @@ router.get("/sitemap.xml", async (req: Request, res: Response) => {
         (path) =>
           `<url><loc>${escapeXml(`${origin}${path}`)}</loc><changefreq>weekly</changefreq></url>`,
       ),
-      ...activeCategories.map(
+      ...categoriesWithInventory.map(
         (category) =>
           `<url><loc>${escapeXml(`${origin}/category/${encodeURIComponent(category.slug)}`)}</loc><changefreq>daily</changefreq><priority>0.7</priority></url>`,
       ),
-      ...activeListings.map(({ slug, lastModified }) => {
-        const lastmod = lastModified
-          ? `<lastmod>${lastModified.toISOString()}</lastmod>`
-          : "";
-        return `<url><loc>${escapeXml(`${origin}/listing/${encodeURIComponent(slug)}`)}</loc>${lastmod}<changefreq>weekly</changefreq><priority>0.6</priority></url>`;
-      }),
     ];
+    res
+      .status(200)
+      .type("application/xml")
+      .set("Cache-Control", "public, max-age=300")
+      .send(
+        `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.join("")}</urlset>`,
+      );
+  } catch (error) {
+    logger.error({ err: error }, "Could not generate static sitemap");
+    res.status(500).type("text/plain").send("Sitemap generation failed");
+  }
+});
+
+router.get("/sitemap-listings/:page.xml", async (req: Request, res: Response) => {
+  const page = Number(req.params.page);
+  if (!Number.isSafeInteger(page) || page < 0) {
+    res.status(404).type("text/plain").send("Sitemap page not found");
+    return;
+  }
+
+  try {
+    const origin = siteOrigin(req);
+    const rows = await db
+      .select({
+        slug: listings.slug,
+        lastModified: listings.publishedAt,
+      })
+      .from(listings)
+      .leftJoin(profiles, eq(profiles.id, listings.sellerId))
+      .where(
+        and(
+          eq(listings.status, "active"),
+          isNull(listings.removedAt),
+          isNull(profiles.suspendedAt),
+        ),
+      )
+      .orderBy(asc(listings.id))
+      .limit(SITEMAP_LISTINGS_PER_FILE)
+      .offset(page * SITEMAP_LISTINGS_PER_FILE);
+    const urls = rows.map(({ slug, lastModified }) => {
+      const lastmod = lastModified
+        ? `<lastmod>${lastModified.toISOString()}</lastmod>`
+        : "";
+      return `<url><loc>${escapeXml(`${origin}/listing/${encodeURIComponent(slug)}`)}</loc>${lastmod}<changefreq>weekly</changefreq><priority>0.6</priority></url>`;
+    });
 
     res
       .status(200)
@@ -599,7 +668,7 @@ router.get("/sitemap.xml", async (req: Request, res: Response) => {
         `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.join("")}</urlset>`,
       );
   } catch (error) {
-    logger.error({ err: error }, "Could not generate sitemap");
+    logger.error({ err: error }, "Could not generate listing sitemap shard");
     res.status(500).type("text/plain").send("Sitemap generation failed");
   }
 });
