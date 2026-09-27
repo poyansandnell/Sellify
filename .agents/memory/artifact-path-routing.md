@@ -3,8 +3,8 @@ name: Artifact path routing
 description: Route-prefix behavior for API artifact services behind Replit's shared proxy.
 ---
 
-Declare exact XML routes and sibling route families separately in an API artifact's service `paths` list. A service entry `/sitemap` did not receive `/sitemap.xml`; the proxy sent that request to the web SPA instead. The explicit `/sitemap.xml`, `/sitemap-static.xml`, and `/sitemap-listings` entries routed correctly.
+Declare every server-rendered SEO route family in the API artifact service `paths` list, including `/location`, `/listing`, `/category`, and each exact XML route. A service entry `/sitemap` did not receive `/sitemap.xml`; the proxy sent that request to the web SPA instead.
 
-**Why:** An apparently reasonable shorter prefix caused valid sitemap requests to return the Vite app shell with `text/html`, even though Express had matching handlers.
+**Why:** Missing a path prefix can make valid SEO URLs return the Vite app shell and its client-side 404 even though Express has a matching handler. API-only smoke tests do not prove shared-proxy routing.
 
-**How to apply:** For API route families, list each exact dotted path and each collection prefix, then restart the managed service and verify through the shared proxy on port 80—not the service's local port.
+**How to apply:** List each SEO route family and exact dotted path in the API service config, restart the managed service, then test the actual public/shared proxy for expected HTML, title, robots metadata, and content—not only the API's local port.
