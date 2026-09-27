@@ -3,6 +3,8 @@ import { describe, it } from "node:test";
 import {
   getListingSitemapPageCount,
   getListingSitemapPageOffset,
+  getLocationSitemapPath,
+  isLocationPageIndexable,
   isValidSitemapPage,
   SITEMAP_LISTINGS_PER_FILE,
 } from "./seo-sitemap";
@@ -32,5 +34,24 @@ describe("listing sitemap pagination", () => {
       assert.throws(() => getListingSitemapPageOffset(page), RangeError);
     }
     assert.equal(isValidSitemapPage(0), true);
+  });
+});
+
+describe("location sitemap pages", () => {
+  it("encodes city and region names into stable paths", () => {
+    assert.equal(
+      getLocationSitemapPath("us", "California", "San Francisco"),
+      "/location/US/California/San%20Francisco",
+    );
+    assert.equal(
+      getLocationSitemapPath("br", null, "São Paulo"),
+      "/location/BR/_/S%C3%A3o%20Paulo",
+    );
+  });
+
+  it("only indexes locations with enough active listings", () => {
+    assert.equal(isLocationPageIndexable(4), false);
+    assert.equal(isLocationPageIndexable(5), true);
+    assert.equal(isLocationPageIndexable(Number.NaN), false);
   });
 });

@@ -15,6 +15,8 @@ router.get("/listings", async (req: Request, res: Response) => {
     q,
     categoryId,
     city,
+    region,
+    postalCode,
     country,
     minPrice,
     maxPrice,
@@ -35,8 +37,13 @@ router.get("/listings", async (req: Request, res: Response) => {
       )!,
     );
   if (categoryId) conds.push(eq(listings.categoryId, Number(categoryId)));
-  if (city) conds.push(ilike(listings.city, city));
-  if (country) conds.push(eq(listings.country, country));
+  if (city?.trim())
+    conds.push(sql`lower(${listings.city}) = ${city.trim().toLowerCase()}`);
+  if (region?.trim())
+    conds.push(sql`lower(${listings.region}) = ${region.trim().toLowerCase()}`);
+  if (postalCode?.trim())
+    conds.push(sql`lower(${listings.postalCode}) = ${postalCode.trim().toLowerCase()}`);
+  if (country?.trim()) conds.push(eq(listings.country, country.trim().toUpperCase()));
   if (minPrice) conds.push(gte(listings.price, minPrice));
   if (maxPrice) conds.push(lte(listings.price, maxPrice));
   if (condition) conds.push(eq(listings.condition, condition));
@@ -86,12 +93,12 @@ router.post("/listings", requireAuth, async (req: Request, res: Response) => {
       condition: d.condition,
       status,
       price: String(d.price),
-      currency: d.currency,
+      currency: d.currency.trim().toUpperCase(),
       priceType: d.priceType ?? "fixed",
-      city: d.city,
-      region: d.region ?? null,
-      country: d.country,
-      postalCode: d.postalCode ?? null,
+      city: d.city.trim(),
+      region: d.region?.trim() || null,
+      country: d.country.trim().toUpperCase(),
+      postalCode: d.postalCode?.trim() || null,
       shipping: d.shipping,
       images: d.images,
       slug: slugify(d.title),
@@ -175,12 +182,12 @@ router.patch("/listings/:id", requireAuth, async (req: Request, res: Response) =
       ...(d.material !== undefined && { material: d.material }),
       ...(d.condition !== undefined && { condition: d.condition }),
       ...(d.price !== undefined && { price: String(d.price) }),
-      ...(d.currency !== undefined && { currency: d.currency }),
+      ...(d.currency !== undefined && { currency: d.currency.trim().toUpperCase() }),
       ...(d.priceType !== undefined && { priceType: d.priceType }),
-      ...(d.city !== undefined && { city: d.city }),
-      ...(d.region !== undefined && { region: d.region }),
-      ...(d.country !== undefined && { country: d.country }),
-      ...(d.postalCode !== undefined && { postalCode: d.postalCode }),
+      ...(d.city !== undefined && { city: d.city.trim() }),
+      ...(d.region !== undefined && { region: d.region?.trim() || null }),
+      ...(d.country !== undefined && { country: d.country.trim().toUpperCase() }),
+      ...(d.postalCode !== undefined && { postalCode: d.postalCode?.trim() || null }),
       ...(d.shipping !== undefined && { shipping: d.shipping }),
       ...(d.images !== undefined && { images: d.images }),
       ...(d.seoTitle !== undefined && { seoTitle: d.seoTitle }),

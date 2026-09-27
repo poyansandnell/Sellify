@@ -11,6 +11,8 @@ export type ListListingsParams = {
 q?: string;
 categoryId?: number;
 city?: string;
+region?: string;
+postalCode?: string;
 country?: string;
 minPrice?: number;
 maxPrice?: number;

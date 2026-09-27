@@ -4,3 +4,4 @@ export { setBaseUrl, setAuthTokenGetter, setRequestObserver, getLastHttpStatus, 
 export type { AuthTokenGetter } from "./custom-fetch";
 export * from './generated/api';
 export * from './generated/api.schemas';
+export * from './location';

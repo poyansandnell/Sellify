@@ -1,18 +1,28 @@
 import { useState } from 'react';
 import { useI18n } from '@/lib/i18n';
-import { useAnalyzeImages, useCreateListing, usePublishListing, useRequestUploadUrl } from '@workspace/api-client-react';
+import { getCountryFromLocale, getDefaultCurrency, useAnalyzeImages, useCreateListing, usePublishListing, useRequestUploadUrl } from '@workspace/api-client-react';
 import { useLocation } from 'wouter';
 import { Camera, Upload, Sparkles, X, Check, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { joinApi } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { LocationFields } from '@/components/LocationFields';
+import type { ListingLocation } from '@/lib/location';
 
 type SellStep = 'photos' | 'analyzing' | 'review' | 'publishing';
 
 export default function SellPage() {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const [, setLocation] = useLocation();
   const [step, setStep] = useState<SellStep>('photos');
+  const initialCountry = getCountryFromLocale();
+  const [listingLocation, setListingLocation] = useState<ListingLocation>({
+    country: initialCountry,
+    region: '',
+    city: '',
+    postalCode: '',
+  });
+  const [currency, setCurrency] = useState(() => getDefaultCurrency(initialCountry));
 
   // State
   const [images, setImages] = useState<{file?: File, objectPath: string, preview: string}[]>([]);
@@ -80,7 +90,7 @@ export default function SellPage() {
     setStep('analyzing');
     try {
       const aiDraft = await analyzeImages.mutateAsync({
-        data: { images: objectPaths, locale: 'sv' }
+        data: { images: objectPaths, locale: language }
       });
       setDraft({
         ...aiDraft,
@@ -100,6 +110,21 @@ export default function SellPage() {
 
   const handlePublish = async () => {
     if (!draft) return;
+    const city = listingLocation.city.trim();
+    const country = listingLocation.country.trim().toUpperCase();
+    const currencyCode = currency.trim().toUpperCase();
+    if (!city) {
+      toast.error(language === 'sv' ? 'Ange en stad för annonsen.' : 'Enter a city for this listing.');
+      return;
+    }
+    if (!/^[A-Z]{2}$/.test(country)) {
+      toast.error(language === 'sv' ? 'Välj ett land.' : 'Choose a country.');
+      return;
+    }
+    if (!/^[A-Z]{3}$/.test(currencyCode)) {
+      toast.error(language === 'sv' ? 'Ange en valutakod med tre bokstäver.' : 'Enter a three-letter currency code.');
+      return;
+    }
     setStep('publishing');
     try {
       const listing = await createListing.mutateAsync({
@@ -109,9 +134,11 @@ export default function SellPage() {
           categoryId: draft.categoryId || null,
           condition: ['new', 'like_new', 'good', 'fair', 'worn'].includes(draft.condition) ? draft.condition as any : 'good',
           price: Number(draft.price),
-          currency: 'SEK',
-          city: 'Okänd', // Ideally we'd get this from user profile
-          country: 'SE',
+          currency: currencyCode,
+          city,
+          region: listingLocation.region.trim() || null,
+          country,
+          postalCode: listingLocation.postalCode.trim() || null,
           shipping: 'both',
           images: images.map(i => i.objectPath)
         }
@@ -236,8 +263,22 @@ export default function SellPage() {
                      onChange={(e) => setDraft({...draft, price: e.target.value})}
                      className="w-full h-16 text-3xl font-display font-bold text-center bg-transparent border-b-2 border-border focus:border-primary focus:outline-none transition-colors"
                    />
-                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xl text-muted-foreground font-bold">kr</span>
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xl text-muted-foreground font-bold">
+                      {currency || 'ISO'}
+                    </span>
                  </div>
+                  <label className="flex items-center justify-between gap-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    {language === 'sv' ? 'Valutakod' : 'Currency code'}
+                    <input
+                      data-testid="currency-input"
+                      type="text"
+                      maxLength={3}
+                      value={currency}
+                      onChange={(event) => setCurrency(event.target.value.toUpperCase())}
+                      placeholder="USD"
+                      className="w-24 h-10 px-2 rounded-lg border border-border bg-background text-center text-sm font-bold text-foreground"
+                    />
+                  </label>
                </div>
             </ReviewCard>
 
@@ -249,6 +290,20 @@ export default function SellPage() {
                  className="w-full h-32 p-3 bg-muted/50 rounded-xl border border-transparent focus:border-primary focus:bg-background focus:outline-none resize-none"
                />
             </ReviewCard>
+
+             <ReviewCard title={language === 'sv' ? 'Plats' : 'Location'}>
+               <LocationFields
+                 value={listingLocation}
+                 language={language}
+                 idPrefix="listing-location"
+                 onChange={(next) => {
+                   setListingLocation(next);
+                   if (next.country !== listingLocation.country) {
+                     setCurrency(getDefaultCurrency(next.country));
+                   }
+                 }}
+               />
+             </ReviewCard>
 
             {/* Fixed Bottom Action */}
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-xl border-t z-50">

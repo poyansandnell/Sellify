@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { and, desc, eq, ilike, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { categories, listings, profiles } from "@workspace/db/schema";
 import { getUserId } from "../lib/auth";
@@ -10,7 +10,10 @@ const router: IRouter = Router();
 
 router.get("/home", async (req: Request, res: Response) => {
   const viewerId = getUserId(req);
-  const { city } = req.query as Record<string, string | undefined>;
+  const { city, country, region, postalCode } = req.query as Record<
+    string,
+    string | undefined
+  >;
 
   const [newest, cats, [{ totalActive }]] = await Promise.all([
     db
@@ -37,11 +40,26 @@ router.get("/home", async (req: Request, res: Response) => {
   ]);
 
   let nearby: typeof newest = [];
-  if (city) {
+  const locationConditions = [];
+  if (city?.trim())
+    locationConditions.push(sql`lower(${listings.city}) = ${city.trim().toLowerCase()}`);
+  if (region?.trim())
+    locationConditions.push(sql`lower(${listings.region}) = ${region.trim().toLowerCase()}`);
+  if (postalCode?.trim())
+    locationConditions.push(sql`lower(${listings.postalCode}) = ${postalCode.trim().toLowerCase()}`);
+  if (country?.trim())
+    locationConditions.push(eq(listings.country, country.trim().toUpperCase()));
+  if (locationConditions.length) {
     nearby = await db
       .select()
       .from(listings)
-      .where(and(eq(listings.status, "active"), isNull(listings.removedAt), ilike(listings.city, city)))
+      .where(
+        and(
+          eq(listings.status, "active"),
+          isNull(listings.removedAt),
+          ...locationConditions,
+        ),
+      )
       .orderBy(desc(listings.publishedAt))
       .limit(8);
   }

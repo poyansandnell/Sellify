@@ -100,9 +100,15 @@ export interface Listing {
   currency: string;
   /** @nullable */
   priceType?: ListingPriceType;
+  /** @minLength 1 */
   city: string;
   /** @nullable */
   region?: string | null;
+  /**
+     * @minLength 2
+     * @maxLength 2
+     * @pattern ^[A-Za-z]{2}$
+     */
   country: string;
   /** @nullable */
   postalCode?: string | null;
@@ -181,11 +187,22 @@ export interface ListingInput {
   material?: string | null;
   condition: ListingInputCondition;
   price: number;
+  /**
+     * @minLength 3
+     * @maxLength 3
+     * @pattern ^[A-Za-z]{3}$
+     */
   currency: string;
   priceType?: ListingInputPriceType;
+  /** @minLength 1 */
   city: string;
   /** @nullable */
   region?: string | null;
+  /**
+     * @minLength 2
+     * @maxLength 2
+     * @pattern ^[A-Za-z]{2}$
+     */
   country: string;
   /** @nullable */
   postalCode?: string | null;
@@ -245,11 +262,21 @@ export interface ListingUpdate {
   material?: string | null;
   condition?: ListingUpdateCondition;
   price?: number;
+  /**
+     * @minLength 3
+     * @maxLength 3
+     * @pattern ^[A-Za-z]{3}$
+     */
   currency?: string;
   priceType?: ListingUpdatePriceType;
   city?: string;
   /** @nullable */
   region?: string | null;
+  /**
+     * @minLength 2
+     * @maxLength 2
+     * @pattern ^[A-Za-z]{2}$
+     */
   country?: string;
   /** @nullable */
   postalCode?: string | null;
@@ -369,6 +396,11 @@ export interface AiListingDraft {
   priceRangeLow?: number | null;
   /** @nullable */
   priceRangeHigh?: number | null;
+  /**
+     * @minLength 3
+     * @maxLength 3
+     * @pattern ^[A-Za-z]{3}$
+     */
   currency: string;
   specifications?: Specification[];
   keywords: string[];
@@ -708,6 +740,8 @@ export type ListListingsParams = {
 q?: string;
 categoryId?: number;
 city?: string;
+region?: string;
+postalCode?: string;
 country?: string;
 minPrice?: number;
 maxPrice?: number;
@@ -730,6 +764,8 @@ export const ListListingsSort = {
 export type GetHomeFeedParams = {
 city?: string;
 country?: string;
+region?: string;
+postalCode?: string;
 };
 
 export type ListModerationReportsParams = {

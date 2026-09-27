@@ -14,7 +14,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import * as Location from 'expo-location';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -26,6 +25,8 @@ import {
   useRefineListingDraft,
   usePublishListing,
   useRequestUploadUrl,
+  getCountryFromLocale,
+  getDefaultCurrency,
   type AiListingDraft,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
@@ -33,7 +34,9 @@ import { conditionLabel, useI18n } from '@/lib/i18n';
 import { EmptyState, PrimaryButton, SecondaryButton } from '@/components/Ui';
 import { VoiceNoteInput } from '@/components/VoiceNoteInput';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
+import { CountryPicker } from '@/components/CountryPicker';
 import { takeCopyListing } from '@/lib/copyListing';
+import { detectDeviceLocation } from '@/lib/location';
 import {
   authFailureDebug,
   errorDetail,
@@ -84,11 +87,17 @@ export default function SellScreen() {
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [city, setCity] = useState('');
+  const [country, setCountry] = useState(getCountryFromLocale());
+  const [region, setRegion] = useState('');
+  const [postalCode, setPostalCode] = useState('');
+  const [currency, setCurrency] = useState(() =>
+    getDefaultCurrency(getCountryFromLocale()),
+  );
+  const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState('');
   const [notes, setNotes] = useState('');
   const [justRefined, setJustRefined] = useState(false);
   const refinedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const cityTouchedRef = useRef(false);
-  const deviceCityRef = useRef('');
 
   useEffect(() => {
     return () => {
@@ -96,45 +105,28 @@ export default function SellScreen() {
     };
   }, []);
 
-  // Detect the seller's real city from device location (e.g. Katrineholm, not a guess).
-  const detectCity = async (): Promise<string> => {
+  const useCurrentLocation = async () => {
+    if (locating) return;
+    setLocating(true);
+    setLocationError('');
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return '';
-      const pos =
-        (await Location.getLastKnownPositionAsync()) ??
-        (await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        }));
-      if (!pos) return '';
-      const [place] = await Location.reverseGeocodeAsync({
-        latitude: pos.coords.latitude,
-        longitude: pos.coords.longitude,
-      });
-      const detected = place?.city || place?.subregion || place?.region || '';
-      if (detected) deviceCityRef.current = detected;
-      return detected;
-    } catch {
-      // Location unavailable — the seller can still type their city.
-      return '';
+      const detected = await detectDeviceLocation();
+      setCity(detected.city);
+      setCountry(detected.country);
+      setRegion(detected.region);
+      setPostalCode(detected.postalCode);
+      setCurrency(getDefaultCurrency(detected.country));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setLocationError(message);
+      Alert.alert(
+        language === 'sv' ? 'Kunde inte hämta plats' : 'Could not get location',
+        message,
+      );
+    } finally {
+      setLocating(false);
     }
   };
-
-  // Prefill once the user is signed in and actually in the sell flow.
-  useEffect(() => {
-    if (!isSignedIn || deviceCityRef.current) return;
-    let cancelled = false;
-    (async () => {
-      const detected = await detectCity();
-      if (detected && !cancelled && !cityTouchedRef.current) {
-        setCity(detected);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSignedIn]);
   // "Skapa liknande annons": prefill the whole form from an existing listing.
   useFocusEffect(
     useCallback(() => {
@@ -158,16 +150,26 @@ export default function SellScreen() {
   );
 
   const applyCopy = (src: NonNullable<ReturnType<typeof takeCopyListing>>) => {
+      const sourceLocation = src as typeof src & {
+        country?: string;
+        region?: string | null;
+        postalCode?: string | null;
+        currency?: string;
+      };
       setImages(
         src.images.map((p) => ({ localUri: imageUrl(p) ?? '', objectPath: p })),
       );
       setTitle(src.title);
       setDescription(src.description);
       setPrice(String(Math.round(src.price)));
-      if (src.city) {
-        cityTouchedRef.current = true;
-        setCity(src.city);
-      }
+      setCity(src.city ?? '');
+      const copiedCountry = sourceLocation.country || getCountryFromLocale();
+      setCountry(copiedCountry);
+      setRegion(sourceLocation.region ?? '');
+      setPostalCode(sourceLocation.postalCode ?? '');
+      setCurrency(
+        sourceLocation.currency || getDefaultCurrency(copiedCountry),
+      );
       setNotes('');
       setDraft({
         title: src.title,
@@ -396,16 +398,27 @@ export default function SellScreen() {
 
   const onPublish = async () => {
     if (!draft || !title.trim() || !price.trim()) return;
-    let cityValue = city.trim() || deviceCityRef.current;
-    if (!cityValue) {
-      // Last attempt to get the real city — never publish with a made-up one.
-      cityValue = await detectCity();
-    }
+    const cityValue = city.trim();
     if (!cityValue) {
       Alert.alert(t.cityRequired);
       return;
     }
-    if (!city.trim()) setCity(cityValue);
+    const countryValue = country.trim().toUpperCase();
+    const currencyValue = currency.trim().toUpperCase();
+    if (!/^[A-Z]{2}$/.test(countryValue)) {
+      Alert.alert(
+        language === 'sv' ? 'Välj ett land' : 'Choose a country',
+      );
+      return;
+    }
+    if (!/^[A-Z]{3}$/.test(currencyValue)) {
+      Alert.alert(
+        language === 'sv'
+          ? 'Ange en valutakod med tre bokstäver'
+          : 'Enter a three-letter currency code',
+      );
+      return;
+    }
     try {
       const listing = await createListing.mutateAsync({
         data: {
@@ -419,10 +432,12 @@ export default function SellScreen() {
           material: draft.material ?? null,
           condition: draft.condition,
           price: Number(price) || draft.suggestedPrice,
-          currency: draft.currency || 'SEK',
+          currency: currencyValue,
           priceType: 'negotiable',
           city: cityValue,
-          country: 'SE',
+          region: region.trim() || null,
+          country: countryValue,
+          postalCode: postalCode.trim() || null,
           shipping: 'pickup',
           images: images.map((img) => img.objectPath),
           keywords: draft.keywords,
@@ -595,7 +610,7 @@ export default function SellScreen() {
             <View style={styles.row}>
               <View style={{ flex: 1 }}>
                 <FieldCard
-                  label={`${t.priceLabel} (${draft.currency || 'SEK'})`}
+                  label={`${t.priceLabel} (${currency || 'ISO'})`}
                   uncertain={isUncertain('suggestedPrice') || isUncertain('price')}
                 >
                   <TextInput
@@ -608,26 +623,145 @@ export default function SellScreen() {
                 </FieldCard>
                 {draft.priceRangeLow && draft.priceRangeHigh ? (
                   <Text style={[styles.hintSmall, { color: colors.mutedForeground }]}>
-                    {Math.round(draft.priceRangeLow)}–{Math.round(draft.priceRangeHigh)} {draft.currency}
+                    {Math.round(draft.priceRangeLow)}–{Math.round(draft.priceRangeHigh)} {currency}
                   </Text>
                 ) : null}
               </View>
               <View style={{ flex: 1 }}>
-                <FieldCard label={t.cityLabel} uncertain={false}>
+                <FieldCard
+                  label={language === 'sv' ? 'Valutakod' : 'Currency code'}
+                  uncertain={false}
+                >
                   <TextInput
-                    testID="city-input"
-                    value={city}
-                    onChangeText={(text) => {
-                      cityTouchedRef.current = true;
-                      setCity(text);
-                    }}
-                    placeholder="Stockholm"
+                    testID="currency-input"
+                    value={currency}
+                    onChangeText={(text) => setCurrency(text.toUpperCase())}
+                    maxLength={3}
+                    autoCapitalize="characters"
+                    placeholder="USD"
                     placeholderTextColor={colors.mutedForeground}
                     style={[styles.fieldInput, { color: colors.foreground }]}
                   />
                 </FieldCard>
               </View>
             </View>
+
+            <FieldCard
+              label={language === 'sv' ? 'Plats' : 'Location'}
+              uncertain={false}
+            >
+              <View style={styles.locationStack}>
+                <View style={styles.locationField}>
+                  <Text style={[styles.inlineLabel, { color: colors.mutedForeground }]}>
+                    {language === 'sv' ? 'Land' : 'Country'}
+                  </Text>
+                  <CountryPicker
+                    testID="listing-country"
+                    value={country}
+                    language={language}
+                    onChange={(code) => {
+                      setCountry(code);
+                      setCurrency(getDefaultCurrency(code));
+                    }}
+                  />
+                </View>
+                <View style={styles.locationField}>
+                  <Text style={[styles.inlineLabel, { color: colors.mutedForeground }]}>
+                    {t.cityLabel}
+                  </Text>
+                  <TextInput
+                    testID="city-input"
+                    value={city}
+                    onChangeText={setCity}
+                    placeholder={language === 'sv' ? 'Ange stad manuellt' : 'Enter city'}
+                    placeholderTextColor={colors.mutedForeground}
+                    style={[
+                      styles.inlineInput,
+                      {
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
+                        color: colors.foreground,
+                      },
+                    ]}
+                  />
+                </View>
+                <View style={styles.locationField}>
+                  <Text style={[styles.inlineLabel, { color: colors.mutedForeground }]}>
+                    {language === 'sv' ? 'Region eller delstat' : 'Region or state'}
+                  </Text>
+                  <TextInput
+                    testID="region-input"
+                    value={region}
+                    onChangeText={setRegion}
+                    placeholder={language === 'sv' ? 'Valfritt' : 'Optional'}
+                    placeholderTextColor={colors.mutedForeground}
+                    style={[
+                      styles.inlineInput,
+                      {
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
+                        color: colors.foreground,
+                      },
+                    ]}
+                  />
+                </View>
+                <View style={styles.locationField}>
+                  <Text style={[styles.inlineLabel, { color: colors.mutedForeground }]}>
+                    {language === 'sv' ? 'Postnummer' : 'Postal code'}
+                  </Text>
+                  <TextInput
+                    testID="postal-code-input"
+                    value={postalCode}
+                    onChangeText={setPostalCode}
+                    placeholder={language === 'sv' ? 'Valfritt' : 'Optional'}
+                    placeholderTextColor={colors.mutedForeground}
+                    style={[
+                      styles.inlineInput,
+                      {
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
+                        color: colors.foreground,
+                      },
+                    ]}
+                  />
+                </View>
+                <Pressable
+                  testID="listing-use-location"
+                  disabled={locating}
+                  onPress={useCurrentLocation}
+                  style={[
+                    styles.useLocationButton,
+                    { borderColor: colors.primary, opacity: locating ? 0.6 : 1 },
+                  ]}
+                >
+                  {locating ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : (
+                    <Feather name="crosshair" size={16} color={colors.primary} />
+                  )}
+                  <Text style={[styles.useLocationText, { color: colors.primary }]}>
+                    {locating
+                      ? language === 'sv' ? 'Hämtar plats…' : 'Finding location…'
+                      : language === 'sv' ? 'Använd min plats' : 'Use my location'}
+                  </Text>
+                </Pressable>
+                <Text style={[styles.locationNote, { color: colors.mutedForeground }]}>
+                  {language === 'sv'
+                    ? 'Plats används bara när du trycker. Exakta koordinater sparas inte.'
+                    : 'Location is used only after you tap. Exact coordinates are not stored.'}
+                </Text>
+                {Platform.OS === 'web' ? (
+                  <Text style={[styles.locationNote, { color: colors.mutedForeground }]}>
+                    © OpenStreetMap contributors
+                  </Text>
+                ) : null}
+                {locationError ? (
+                  <Text testID="location-error" style={styles.locationError}>
+                    {locationError}
+                  </Text>
+                ) : null}
+              </View>
+            </FieldCard>
 
             <View style={styles.badges}>
               <View style={[styles.badge, { backgroundColor: colors.secondary }]}>
@@ -774,6 +908,33 @@ const styles = StyleSheet.create({
   },
   fieldLabel: { fontSize: 12, fontFamily: 'Inter_500Medium', textTransform: 'uppercase', letterSpacing: 0.4 },
   fieldInput: { fontSize: 16, fontFamily: 'Inter_500Medium', padding: 0 },
+  locationStack: { gap: 10 },
+  locationField: { gap: 4 },
+  inlineLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
+  inlineInput: {
+    minHeight: 42,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    fontSize: 14,
+  },
+  useLocationButton: {
+    minHeight: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+  },
+  useLocationText: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
+  locationNote: {
+    fontSize: 11,
+    fontFamily: 'Inter_400Regular',
+    lineHeight: 15,
+  },
+  locationError: { color: '#b91c1c', fontSize: 12, fontFamily: 'Inter_500Medium' },
   multiline: { minHeight: 110, textAlignVertical: 'top', lineHeight: 21 },
   uncertain: {
     flexDirection: 'row',

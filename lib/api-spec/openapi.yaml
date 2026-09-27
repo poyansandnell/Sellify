@@ -69,6 +69,12 @@ paths:
         - name: city
           in: query
           schema: { type: string }
+        - name: region
+          in: query
+          schema: { type: string }
+        - name: postalCode
+          in: query
+          schema: { type: string }
         - name: country
           in: query
           schema: { type: string }
@@ -348,6 +354,12 @@ paths:
           in: query
           schema: { type: string }
         - name: country
+          in: query
+          schema: { type: string }
+        - name: region
+          in: query
+          schema: { type: string }
+        - name: postalCode
           in: query
           schema: { type: string }
       responses:
@@ -806,9 +818,13 @@ components:
         priceType:
           type: ["string", "null"]
           enum: [fixed, negotiable, null]
-        city: { type: string }
+        city: { type: string, minLength: 1 }
         region: { type: ["string", "null"] }
-        country: { type: string }
+        country:
+          type: string
+          minLength: 2
+          maxLength: 2
+          pattern: "^[A-Za-z]{2}$"
         postalCode: { type: ["string", "null"] }
         shipping:
           type: string
@@ -853,11 +869,19 @@ components:
         material: { type: ["string", "null"] }
         condition: { type: string, enum: [new, like_new, good, fair, worn] }
         price: { type: number }
-        currency: { type: string }
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          pattern: "^[A-Za-z]{3}$"
         priceType: { type: string, enum: [fixed, negotiable] }
-        city: { type: string }
+        city: { type: string, minLength: 1 }
         region: { type: ["string", "null"] }
-        country: { type: string }
+        country:
+          type: string
+          minLength: 2
+          maxLength: 2
+          pattern: "^[A-Za-z]{2}$"
         postalCode: { type: ["string", "null"] }
         shipping: { type: string, enum: [pickup, ship, both] }
         images:
@@ -886,11 +910,19 @@ components:
         material: { type: ["string", "null"] }
         condition: { type: string, enum: [new, like_new, good, fair, worn] }
         price: { type: number }
-        currency: { type: string }
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          pattern: "^[A-Za-z]{3}$"
         priceType: { type: string, enum: [fixed, negotiable] }
         city: { type: string }
         region: { type: ["string", "null"] }
-        country: { type: string }
+        country:
+          type: string
+          minLength: 2
+          maxLength: 2
+          pattern: "^[A-Za-z]{2}$"
         postalCode: { type: ["string", "null"] }
         shipping: { type: string, enum: [pickup, ship, both] }
         images:
@@ -1005,7 +1037,11 @@ components:
         suggestedPrice: { type: number }
         priceRangeLow: { type: ["number", "null"] }
         priceRangeHigh: { type: ["number", "null"] }
-        currency: { type: string }
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          pattern: "^[A-Za-z]{3}$"
         specifications:
           type: array
           items:

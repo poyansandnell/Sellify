@@ -19,3 +19,18 @@ export function getListingSitemapPageOffset(page: number): number {
 
   return page * SITEMAP_LISTINGS_PER_FILE;
 }
+
+export function getLocationSitemapPath(
+  country: string,
+  region: string | null,
+  city: string,
+): string {
+  return `/location/${encodeURIComponent(country.toUpperCase())}/${encodeURIComponent(region?.trim() || "_")}/${encodeURIComponent(city.trim())}`;
+}
+
+export function isLocationPageIndexable(
+  listingCount: number,
+  threshold = 5,
+): boolean {
+  return Number.isSafeInteger(listingCount) && listingCount >= threshold;
+}

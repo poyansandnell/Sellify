@@ -27,11 +27,21 @@ export interface ListingUpdate {
   material?: string | null;
   condition?: ListingUpdateCondition;
   price?: number;
+  /**
+     * @minLength 3
+     * @maxLength 3
+     * @pattern ^[A-Za-z]{3}$
+     */
   currency?: string;
   priceType?: ListingUpdatePriceType;
   city?: string;
   /** @nullable */
   region?: string | null;
+  /**
+     * @minLength 2
+     * @maxLength 2
+     * @pattern ^[A-Za-z]{2}$
+     */
   country?: string;
   /** @nullable */
   postalCode?: string | null;

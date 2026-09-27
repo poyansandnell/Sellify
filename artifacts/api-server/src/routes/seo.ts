@@ -7,6 +7,8 @@ import { logger } from "../lib/logger";
 import {
   getListingSitemapPageCount,
   getListingSitemapPageOffset,
+  getLocationSitemapPath,
+  isLocationPageIndexable,
   isValidSitemapPage,
   SITEMAP_LISTINGS_PER_FILE,
 } from "../lib/seo-sitemap";
@@ -14,6 +16,18 @@ import {
 const router: IRouter = Router();
 const PRODUCTION_ORIGIN = "https://sellifyai.sale";
 const CATEGORY_INDEX_THRESHOLD = 5;
+const LOCATION_INDEX_THRESHOLD = 5;
+
+function countryName(countryCode: string, locale: string): string {
+  try {
+    return (
+      new Intl.DisplayNames([locale], { type: "region" }).of(countryCode) ??
+      countryCode
+    );
+  } catch {
+    return countryCode;
+  }
+}
 
 type ListingSeoRow = {
   listing: typeof listings.$inferSelect;
@@ -554,6 +568,111 @@ router.get("/category/:slug", async (req: Request, res: Response) => {
   }
 });
 
+router.get(
+  "/location/:country/:region/:city",
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const country = String(req.params.country).trim().toUpperCase();
+      const regionSegment = String(req.params.region).trim();
+      const region = regionSegment === "_" ? null : regionSegment;
+      const city = String(req.params.city).trim();
+      if (!/^[A-Z]{2}$/.test(country) || !city) {
+        res.status(404).type("html").send(notFoundPage(req));
+        return;
+      }
+
+      const conditions = [
+        eq(listings.country, country),
+        eq(listings.city, city),
+        eq(listings.status, "active"),
+        isNull(listings.removedAt),
+        isNull(profiles.suspendedAt),
+      ];
+      conditions.push(
+        region === null ? isNull(listings.region) : eq(listings.region, region),
+      );
+
+      const rows = await db
+        .select({ listing: listings })
+        .from(listings)
+        .leftJoin(profiles, eq(profiles.id, listings.sellerId))
+        .where(and(...conditions))
+        .orderBy(desc(listings.publishedAt))
+        .limit(60);
+
+      if (rows.length === 0) {
+        res.status(404).type("html").send(notFoundPage(req));
+        return;
+      }
+
+      const origin = siteOrigin(req);
+      const canonical = `${origin}${getLocationSitemapPath(country, region, city)}`;
+      const locale = country === "SE" ? "sv" : "en";
+      const isSwedish = locale === "sv";
+      const displayCountry = countryName(country, locale);
+      const locationLabel = [city, region, displayCountry].filter(Boolean).join(", ");
+      const pageTitle = isSwedish
+        ? `Begagnat i ${city} | Sellify`
+        : `Used items for sale in ${city} | Sellify`;
+      const description = clip(
+        isSwedish
+          ? `Köp och sälj begagnat i ${locationLabel}. Se aktuella Sellify-annonser från säljare i området.`
+          : `Buy and sell second-hand in ${locationLabel}. Browse current listings posted by Sellify sellers in the area.`,
+        160,
+      );
+      const cards = rows
+        .map(({ listing }) => {
+          const image = listing.images?.[0]
+            ? absoluteImageUrl(listing.images[0], origin)
+            : null;
+          const href = `/listing/${encodeURIComponent(listing.slug)}`;
+          return `<a class="listing-card" href="${href}">
+            ${image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(listing.title)}" width="600" height="600" loading="lazy">` : `<div class="image-placeholder" role="img" aria-label="${isSwedish ? "Ingen bild tillgänglig" : "No image available"}">${isSwedish ? "Ingen bild" : "No image"}</div>`}
+            <h2>${escapeHtml(listing.title)}</h2>
+            <p class="card-price">${escapeHtml(formatPrice(String(listing.price), listing.currency))}</p>
+            <p>${escapeHtml([listing.city, listing.region, listing.country].filter(Boolean).join(", "))}</p>
+          </a>`;
+        })
+        .join("");
+      const body = `<main class="container">
+        <nav class="breadcrumbs" aria-label="${isSwedish ? "Brödsmulor" : "Breadcrumb"}"><a href="/">${isSwedish ? "Annonser" : "Listings"}</a><span aria-hidden="true">›</span><span>${escapeHtml(locationLabel)}</span></nav>
+        <h1>${isSwedish ? "Begagnat i" : "Second-hand items in"} ${escapeHtml(city)}</h1>
+        <p class="category-intro">${escapeHtml(description)}</p>
+        <section class="listing-grid" aria-label="${isSwedish ? "Aktuella annonser" : "Current listings"}">${cards}</section>
+        <section class="app-cta" aria-labelledby="app-cta-title"><h2 id="app-cta-title">${isSwedish ? "Använd Sellify på mobilen" : "Use Sellify on mobile"}</h2><p>${isSwedish ? "Få tillgång till annonser och meddelanden när du är på språng." : "Browse listings and messages while you are on the go."}</p><div class="store-links">${storeLinksMarkup()}</div></section>
+      </main>`;
+      const indexable = isLocationPageIndexable(
+        rows.length,
+        LOCATION_INDEX_THRESHOLD,
+      );
+
+      res
+        .status(200)
+        .type("html")
+        .set("Cache-Control", "public, max-age=60, s-maxage=300")
+        .send(
+          htmlDocument({
+            title: clip(pageTitle, 65),
+            description,
+            canonical,
+            body,
+            robots: indexable ? "index, follow" : "noindex, follow",
+            jsonLd: {
+              "@context": "https://schema.org",
+              "@type": "CollectionPage",
+              name: pageTitle,
+              description,
+              url: canonical,
+            },
+          }),
+        );
+    } catch (error) {
+      logger.error({ err: error }, "Could not render location SEO page");
+      res.status(500).type("html").send("Det gick inte att visa platsen just nu.");
+    }
+  },
+);
+
 router.get("/sitemap.xml", async (req: Request, res: Response) => {
   try {
     const origin = siteOrigin(req);
@@ -612,6 +731,27 @@ router.get("/sitemap-static.xml", async (req: Request, res: Response) => {
       .groupBy(categories.id)
       .having(gte(sql`count(${listings.id})`, CATEGORY_INDEX_THRESHOLD));
 
+    const locationsWithInventory = await db
+      .select({
+        country: listings.country,
+        region: listings.region,
+        city: listings.city,
+      })
+      .from(listings)
+      .leftJoin(profiles, eq(profiles.id, listings.sellerId))
+      .where(
+        and(
+          eq(listings.status, "active"),
+          isNull(listings.removedAt),
+          isNull(profiles.suspendedAt),
+          sql`trim(${listings.city}) <> ''`,
+        ),
+      )
+      .groupBy(listings.country, listings.region, listings.city)
+      .having(
+        gte(sql`count(${listings.id})`, LOCATION_INDEX_THRESHOLD),
+      );
+
     const fixedPages = ["/", "/support", "/terms", "/privacy"];
     const urls = [
       ...fixedPages.map(
@@ -621,6 +761,10 @@ router.get("/sitemap-static.xml", async (req: Request, res: Response) => {
       ...categoriesWithInventory.map(
         (category) =>
           `<url><loc>${escapeXml(`${origin}/category/${encodeURIComponent(category.slug)}`)}</loc><changefreq>daily</changefreq><priority>0.7</priority></url>`,
+      ),
+      ...locationsWithInventory.map(
+        (location) =>
+          `<url><loc>${escapeXml(`${origin}${getLocationSitemapPath(location.country, location.region, location.city)}`)}</loc><changefreq>daily</changefreq><priority>0.7</priority></url>`,
       ),
     ];
     res

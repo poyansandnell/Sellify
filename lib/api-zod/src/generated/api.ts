@@ -38,6 +38,8 @@ export const ListListingsQueryParams = zod.object({
   "q": zod.coerce.string().optional(),
   "categoryId": zod.coerce.number().optional(),
   "city": zod.coerce.string().optional(),
+  "region": zod.coerce.string().optional(),
+  "postalCode": zod.coerce.string().optional(),
   "country": zod.coerce.string().optional(),
   "minPrice": zod.coerce.number().optional(),
   "maxPrice": zod.coerce.number().optional(),
@@ -47,6 +49,14 @@ export const ListListingsQueryParams = zod.object({
   "limit": zod.coerce.number().optional(),
   "offset": zod.coerce.number().optional()
 })
+
+
+export const listListingsResponseItemsItemCountryMin = 2;
+export const listListingsResponseItemsItemCountryMax = 2;
+
+
+export const listListingsResponseItemsItemCountryRegExp = new RegExp('^[A-Za-z]{2}$');
+
 
 export const ListListingsResponse = zod.object({
   "items": zod.array(zod.object({
@@ -69,9 +79,9 @@ export const ListListingsResponse = zod.object({
   "price": zod.number(),
   "currency": zod.string(),
   "priceType": zod.union([zod.literal('fixed'),zod.literal('negotiable'),zod.literal(null)]).nullish(),
-  "city": zod.string(),
+  "city": zod.string().min(1),
   "region": zod.string().nullish(),
-  "country": zod.string(),
+  "country": zod.string().min(listListingsResponseItemsItemCountryMin).max(listListingsResponseItemsItemCountryMax).regex(listListingsResponseItemsItemCountryRegExp),
   "postalCode": zod.string().nullish(),
   "shipping": zod.enum(['pickup', 'ship', 'both']),
   "images": zod.array(zod.string()).describe('Ordered image URLs; first is the main image.'),
@@ -98,6 +108,17 @@ export const ListListingsResponse = zod.object({
  * @summary Create a listing draft
  */
 
+export const createListingBodyCurrencyMin = 3;
+export const createListingBodyCurrencyMax = 3;
+
+
+export const createListingBodyCurrencyRegExp = new RegExp('^[A-Za-z]{3}$');
+
+export const createListingBodyCountryMin = 2;
+export const createListingBodyCountryMax = 2;
+
+
+export const createListingBodyCountryRegExp = new RegExp('^[A-Za-z]{2}$');
 
 
 export const CreateListingBody = zod.object({
@@ -111,11 +132,11 @@ export const CreateListingBody = zod.object({
   "material": zod.string().nullish(),
   "condition": zod.enum(['new', 'like_new', 'good', 'fair', 'worn']),
   "price": zod.number(),
-  "currency": zod.string(),
+  "currency": zod.string().min(createListingBodyCurrencyMin).max(createListingBodyCurrencyMax).regex(createListingBodyCurrencyRegExp),
   "priceType": zod.enum(['fixed', 'negotiable']).optional(),
-  "city": zod.string(),
+  "city": zod.string().min(1),
   "region": zod.string().nullish(),
-  "country": zod.string(),
+  "country": zod.string().min(createListingBodyCountryMin).max(createListingBodyCountryMax).regex(createListingBodyCountryRegExp),
   "postalCode": zod.string().nullish(),
   "shipping": zod.enum(['pickup', 'ship', 'both']),
   "images": zod.array(zod.string()),
@@ -128,6 +149,14 @@ export const CreateListingBody = zod.object({
 })).optional(),
   "status": zod.enum(['draft', 'active']).optional()
 })
+
+
+export const createListingResponseCountryMin = 2;
+export const createListingResponseCountryMax = 2;
+
+
+export const createListingResponseCountryRegExp = new RegExp('^[A-Za-z]{2}$');
+
 
 export const CreateListingResponse = zod.object({
   "id": zod.number(),
@@ -149,9 +178,9 @@ export const CreateListingResponse = zod.object({
   "price": zod.number(),
   "currency": zod.string(),
   "priceType": zod.union([zod.literal('fixed'),zod.literal('negotiable'),zod.literal(null)]).nullish(),
-  "city": zod.string(),
+  "city": zod.string().min(1),
   "region": zod.string().nullish(),
-  "country": zod.string(),
+  "country": zod.string().min(createListingResponseCountryMin).max(createListingResponseCountryMax).regex(createListingResponseCountryRegExp),
   "postalCode": zod.string().nullish(),
   "shipping": zod.enum(['pickup', 'ship', 'both']),
   "images": zod.array(zod.string()).describe('Ordered image URLs; first is the main image.'),
@@ -179,6 +208,14 @@ export const GetListingParams = zod.object({
   "id": zod.coerce.number()
 })
 
+
+export const getListingResponseCountryMin = 2;
+export const getListingResponseCountryMax = 2;
+
+
+export const getListingResponseCountryRegExp = new RegExp('^[A-Za-z]{2}$');
+
+
 export const GetListingResponse = zod.object({
   "id": zod.number(),
   "sellerId": zod.string(),
@@ -199,9 +236,9 @@ export const GetListingResponse = zod.object({
   "price": zod.number(),
   "currency": zod.string(),
   "priceType": zod.union([zod.literal('fixed'),zod.literal('negotiable'),zod.literal(null)]).nullish(),
-  "city": zod.string(),
+  "city": zod.string().min(1),
   "region": zod.string().nullish(),
-  "country": zod.string(),
+  "country": zod.string().min(getListingResponseCountryMin).max(getListingResponseCountryMax).regex(getListingResponseCountryRegExp),
   "postalCode": zod.string().nullish(),
   "shipping": zod.enum(['pickup', 'ship', 'both']),
   "images": zod.array(zod.string()).describe('Ordered image URLs; first is the main image.'),
@@ -230,6 +267,16 @@ export const UpdateListingParams = zod.object({
 })
 
 
+export const updateListingBodyCurrencyMin = 3;
+export const updateListingBodyCurrencyMax = 3;
+
+
+export const updateListingBodyCurrencyRegExp = new RegExp('^[A-Za-z]{3}$');
+export const updateListingBodyCountryMin = 2;
+export const updateListingBodyCountryMax = 2;
+
+
+export const updateListingBodyCountryRegExp = new RegExp('^[A-Za-z]{2}$');
 
 
 export const UpdateListingBody = zod.object({
@@ -243,11 +290,11 @@ export const UpdateListingBody = zod.object({
   "material": zod.string().nullish(),
   "condition": zod.enum(['new', 'like_new', 'good', 'fair', 'worn']).optional(),
   "price": zod.number().optional(),
-  "currency": zod.string().optional(),
+  "currency": zod.string().min(updateListingBodyCurrencyMin).max(updateListingBodyCurrencyMax).regex(updateListingBodyCurrencyRegExp).optional(),
   "priceType": zod.enum(['fixed', 'negotiable']).optional(),
   "city": zod.string().optional(),
   "region": zod.string().nullish(),
-  "country": zod.string().optional(),
+  "country": zod.string().min(updateListingBodyCountryMin).max(updateListingBodyCountryMax).regex(updateListingBodyCountryRegExp).optional(),
   "postalCode": zod.string().nullish(),
   "shipping": zod.enum(['pickup', 'ship', 'both']).optional(),
   "images": zod.array(zod.string()).optional(),
@@ -259,6 +306,14 @@ export const UpdateListingBody = zod.object({
   "value": zod.string()
 })).optional()
 })
+
+
+export const updateListingResponseCountryMin = 2;
+export const updateListingResponseCountryMax = 2;
+
+
+export const updateListingResponseCountryRegExp = new RegExp('^[A-Za-z]{2}$');
+
 
 export const UpdateListingResponse = zod.object({
   "id": zod.number(),
@@ -280,9 +335,9 @@ export const UpdateListingResponse = zod.object({
   "price": zod.number(),
   "currency": zod.string(),
   "priceType": zod.union([zod.literal('fixed'),zod.literal('negotiable'),zod.literal(null)]).nullish(),
-  "city": zod.string(),
+  "city": zod.string().min(1),
   "region": zod.string().nullish(),
-  "country": zod.string(),
+  "country": zod.string().min(updateListingResponseCountryMin).max(updateListingResponseCountryMax).regex(updateListingResponseCountryRegExp),
   "postalCode": zod.string().nullish(),
   "shipping": zod.enum(['pickup', 'ship', 'both']),
   "images": zod.array(zod.string()).describe('Ordered image URLs; first is the main image.'),
@@ -320,6 +375,14 @@ export const GetListingBySlugParams = zod.object({
   "slug": zod.coerce.string()
 })
 
+
+export const getListingBySlugResponseCountryMin = 2;
+export const getListingBySlugResponseCountryMax = 2;
+
+
+export const getListingBySlugResponseCountryRegExp = new RegExp('^[A-Za-z]{2}$');
+
+
 export const GetListingBySlugResponse = zod.object({
   "id": zod.number(),
   "sellerId": zod.string(),
@@ -340,9 +403,9 @@ export const GetListingBySlugResponse = zod.object({
   "price": zod.number(),
   "currency": zod.string(),
   "priceType": zod.union([zod.literal('fixed'),zod.literal('negotiable'),zod.literal(null)]).nullish(),
-  "city": zod.string(),
+  "city": zod.string().min(1),
   "region": zod.string().nullish(),
-  "country": zod.string(),
+  "country": zod.string().min(getListingBySlugResponseCountryMin).max(getListingBySlugResponseCountryMax).regex(getListingBySlugResponseCountryRegExp),
   "postalCode": zod.string().nullish(),
   "shipping": zod.enum(['pickup', 'ship', 'both']),
   "images": zod.array(zod.string()).describe('Ordered image URLs; first is the main image.'),
@@ -370,6 +433,14 @@ export const PublishListingParams = zod.object({
   "id": zod.coerce.number()
 })
 
+
+export const publishListingResponseCountryMin = 2;
+export const publishListingResponseCountryMax = 2;
+
+
+export const publishListingResponseCountryRegExp = new RegExp('^[A-Za-z]{2}$');
+
+
 export const PublishListingResponse = zod.object({
   "id": zod.number(),
   "sellerId": zod.string(),
@@ -390,9 +461,9 @@ export const PublishListingResponse = zod.object({
   "price": zod.number(),
   "currency": zod.string(),
   "priceType": zod.union([zod.literal('fixed'),zod.literal('negotiable'),zod.literal(null)]).nullish(),
-  "city": zod.string(),
+  "city": zod.string().min(1),
   "region": zod.string().nullish(),
-  "country": zod.string(),
+  "country": zod.string().min(publishListingResponseCountryMin).max(publishListingResponseCountryMax).regex(publishListingResponseCountryRegExp),
   "postalCode": zod.string().nullish(),
   "shipping": zod.enum(['pickup', 'ship', 'both']),
   "images": zod.array(zod.string()).describe('Ordered image URLs; first is the main image.'),
@@ -420,6 +491,14 @@ export const MarkListingSoldParams = zod.object({
   "id": zod.coerce.number()
 })
 
+
+export const markListingSoldResponseCountryMin = 2;
+export const markListingSoldResponseCountryMax = 2;
+
+
+export const markListingSoldResponseCountryRegExp = new RegExp('^[A-Za-z]{2}$');
+
+
 export const MarkListingSoldResponse = zod.object({
   "id": zod.number(),
   "sellerId": zod.string(),
@@ -440,9 +519,9 @@ export const MarkListingSoldResponse = zod.object({
   "price": zod.number(),
   "currency": zod.string(),
   "priceType": zod.union([zod.literal('fixed'),zod.literal('negotiable'),zod.literal(null)]).nullish(),
-  "city": zod.string(),
+  "city": zod.string().min(1),
   "region": zod.string().nullish(),
-  "country": zod.string(),
+  "country": zod.string().min(markListingSoldResponseCountryMin).max(markListingSoldResponseCountryMax).regex(markListingSoldResponseCountryRegExp),
   "postalCode": zod.string().nullish(),
   "shipping": zod.enum(['pickup', 'ship', 'both']),
   "images": zod.array(zod.string()).describe('Ordered image URLs; first is the main image.'),
@@ -483,6 +562,14 @@ export const GetSimilarListingsParams = zod.object({
   "id": zod.coerce.number()
 })
 
+
+export const getSimilarListingsResponseCountryMin = 2;
+export const getSimilarListingsResponseCountryMax = 2;
+
+
+export const getSimilarListingsResponseCountryRegExp = new RegExp('^[A-Za-z]{2}$');
+
+
 export const GetSimilarListingsResponseItem = zod.object({
   "id": zod.number(),
   "sellerId": zod.string(),
@@ -503,9 +590,9 @@ export const GetSimilarListingsResponseItem = zod.object({
   "price": zod.number(),
   "currency": zod.string(),
   "priceType": zod.union([zod.literal('fixed'),zod.literal('negotiable'),zod.literal(null)]).nullish(),
-  "city": zod.string(),
+  "city": zod.string().min(1),
   "region": zod.string().nullish(),
-  "country": zod.string(),
+  "country": zod.string().min(getSimilarListingsResponseCountryMin).max(getSimilarListingsResponseCountryMax).regex(getSimilarListingsResponseCountryRegExp),
   "postalCode": zod.string().nullish(),
   "shipping": zod.enum(['pickup', 'ship', 'both']),
   "images": zod.array(zod.string()).describe('Ordered image URLs; first is the main image.'),
@@ -558,6 +645,13 @@ export const AnalyzeImagesBody = zod.object({
   "userNotes": zod.string().nullish().describe('Extra details from the seller (spoken or typed) to incorporate in the listing.')
 })
 
+export const analyzeImagesResponseCurrencyMin = 3;
+export const analyzeImagesResponseCurrencyMax = 3;
+
+
+export const analyzeImagesResponseCurrencyRegExp = new RegExp('^[A-Za-z]{3}$');
+
+
 export const AnalyzeImagesResponse = zod.object({
   "title": zod.string(),
   "description": zod.string(),
@@ -572,7 +666,7 @@ export const AnalyzeImagesResponse = zod.object({
   "suggestedPrice": zod.number(),
   "priceRangeLow": zod.number().nullish(),
   "priceRangeHigh": zod.number().nullish(),
-  "currency": zod.string(),
+  "currency": zod.string().min(analyzeImagesResponseCurrencyMin).max(analyzeImagesResponseCurrencyMax).regex(analyzeImagesResponseCurrencyRegExp),
   "specifications": zod.array(zod.object({
   "label": zod.string(),
   "value": zod.string()
@@ -623,8 +717,24 @@ export const TranscribeAudioResponse = zod.object({
  */
 export const GetHomeFeedQueryParams = zod.object({
   "city": zod.coerce.string().optional(),
-  "country": zod.coerce.string().optional()
+  "country": zod.coerce.string().optional(),
+  "region": zod.coerce.string().optional(),
+  "postalCode": zod.coerce.string().optional()
 })
+
+
+export const getHomeFeedResponseNewestItemCountryMin = 2;
+export const getHomeFeedResponseNewestItemCountryMax = 2;
+
+
+export const getHomeFeedResponseNewestItemCountryRegExp = new RegExp('^[A-Za-z]{2}$');
+
+export const getHomeFeedResponseNearbyItemCountryMin = 2;
+export const getHomeFeedResponseNearbyItemCountryMax = 2;
+
+
+export const getHomeFeedResponseNearbyItemCountryRegExp = new RegExp('^[A-Za-z]{2}$');
+
 
 export const GetHomeFeedResponse = zod.object({
   "newest": zod.array(zod.object({
@@ -647,9 +757,9 @@ export const GetHomeFeedResponse = zod.object({
   "price": zod.number(),
   "currency": zod.string(),
   "priceType": zod.union([zod.literal('fixed'),zod.literal('negotiable'),zod.literal(null)]).nullish(),
-  "city": zod.string(),
+  "city": zod.string().min(1),
   "region": zod.string().nullish(),
-  "country": zod.string(),
+  "country": zod.string().min(getHomeFeedResponseNewestItemCountryMin).max(getHomeFeedResponseNewestItemCountryMax).regex(getHomeFeedResponseNewestItemCountryRegExp),
   "postalCode": zod.string().nullish(),
   "shipping": zod.enum(['pickup', 'ship', 'both']),
   "images": zod.array(zod.string()).describe('Ordered image URLs; first is the main image.'),
@@ -688,9 +798,9 @@ export const GetHomeFeedResponse = zod.object({
   "price": zod.number(),
   "currency": zod.string(),
   "priceType": zod.union([zod.literal('fixed'),zod.literal('negotiable'),zod.literal(null)]).nullish(),
-  "city": zod.string(),
+  "city": zod.string().min(1),
   "region": zod.string().nullish(),
-  "country": zod.string(),
+  "country": zod.string().min(getHomeFeedResponseNearbyItemCountryMin).max(getHomeFeedResponseNearbyItemCountryMax).regex(getHomeFeedResponseNearbyItemCountryRegExp),
   "postalCode": zod.string().nullish(),
   "shipping": zod.enum(['pickup', 'ship', 'both']),
   "images": zod.array(zod.string()).describe('Ordered image URLs; first is the main image.'),
@@ -772,6 +882,14 @@ export const UpdateMeResponse = zod.object({
 /**
  * @summary Current user's listings (all statuses)
  */
+
+export const getMyListingsResponseCountryMin = 2;
+export const getMyListingsResponseCountryMax = 2;
+
+
+export const getMyListingsResponseCountryRegExp = new RegExp('^[A-Za-z]{2}$');
+
+
 export const GetMyListingsResponseItem = zod.object({
   "id": zod.number(),
   "sellerId": zod.string(),
@@ -792,9 +910,9 @@ export const GetMyListingsResponseItem = zod.object({
   "price": zod.number(),
   "currency": zod.string(),
   "priceType": zod.union([zod.literal('fixed'),zod.literal('negotiable'),zod.literal(null)]).nullish(),
-  "city": zod.string(),
+  "city": zod.string().min(1),
   "region": zod.string().nullish(),
-  "country": zod.string(),
+  "country": zod.string().min(getMyListingsResponseCountryMin).max(getMyListingsResponseCountryMax).regex(getMyListingsResponseCountryRegExp),
   "postalCode": zod.string().nullish(),
   "shipping": zod.enum(['pickup', 'ship', 'both']),
   "images": zod.array(zod.string()).describe('Ordered image URLs; first is the main image.'),
@@ -819,6 +937,14 @@ export const GetMyListingsResponse = zod.array(GetMyListingsResponseItem)
 /**
  * @summary Current user's favorited listings
  */
+
+export const getMyFavoritesResponseCountryMin = 2;
+export const getMyFavoritesResponseCountryMax = 2;
+
+
+export const getMyFavoritesResponseCountryRegExp = new RegExp('^[A-Za-z]{2}$');
+
+
 export const GetMyFavoritesResponseItem = zod.object({
   "id": zod.number(),
   "sellerId": zod.string(),
@@ -839,9 +965,9 @@ export const GetMyFavoritesResponseItem = zod.object({
   "price": zod.number(),
   "currency": zod.string(),
   "priceType": zod.union([zod.literal('fixed'),zod.literal('negotiable'),zod.literal(null)]).nullish(),
-  "city": zod.string(),
+  "city": zod.string().min(1),
   "region": zod.string().nullish(),
-  "country": zod.string(),
+  "country": zod.string().min(getMyFavoritesResponseCountryMin).max(getMyFavoritesResponseCountryMax).regex(getMyFavoritesResponseCountryRegExp),
   "postalCode": zod.string().nullish(),
   "shipping": zod.enum(['pickup', 'ship', 'both']),
   "images": zod.array(zod.string()).describe('Ordered image URLs; first is the main image.'),
@@ -890,6 +1016,14 @@ export const GetSellerParams = zod.object({
   "id": zod.coerce.string()
 })
 
+
+export const getSellerResponseListingsItemCountryMin = 2;
+export const getSellerResponseListingsItemCountryMax = 2;
+
+
+export const getSellerResponseListingsItemCountryRegExp = new RegExp('^[A-Za-z]{2}$');
+
+
 export const GetSellerResponse = zod.object({
   "id": zod.string(),
   "displayName": zod.string(),
@@ -918,9 +1052,9 @@ export const GetSellerResponse = zod.object({
   "price": zod.number(),
   "currency": zod.string(),
   "priceType": zod.union([zod.literal('fixed'),zod.literal('negotiable'),zod.literal(null)]).nullish(),
-  "city": zod.string(),
+  "city": zod.string().min(1),
   "region": zod.string().nullish(),
-  "country": zod.string(),
+  "country": zod.string().min(getSellerResponseListingsItemCountryMin).max(getSellerResponseListingsItemCountryMax).regex(getSellerResponseListingsItemCountryRegExp),
   "postalCode": zod.string().nullish(),
   "shipping": zod.enum(['pickup', 'ship', 'both']),
   "images": zod.array(zod.string()).describe('Ordered image URLs; first is the main image.'),

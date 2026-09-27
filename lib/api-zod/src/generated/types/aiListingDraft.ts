@@ -30,6 +30,11 @@ export interface AiListingDraft {
   priceRangeLow?: number | null;
   /** @nullable */
   priceRangeHigh?: number | null;
+  /**
+     * @minLength 3
+     * @maxLength 3
+     * @pattern ^[A-Za-z]{3}$
+     */
   currency: string;
   specifications?: Specification[];
   keywords: string[];

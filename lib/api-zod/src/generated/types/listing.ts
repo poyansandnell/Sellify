@@ -42,9 +42,15 @@ export interface Listing {
   currency: string;
   /** @nullable */
   priceType?: ListingPriceType;
+  /** @minLength 1 */
   city: string;
   /** @nullable */
   region?: string | null;
+  /**
+     * @minLength 2
+     * @maxLength 2
+     * @pattern ^[A-Za-z]{2}$
+     */
   country: string;
   /** @nullable */
   postalCode?: string | null;

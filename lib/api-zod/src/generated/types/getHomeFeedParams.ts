@@ -9,4 +9,6 @@
 export type GetHomeFeedParams = {
 city?: string;
 country?: string;
+region?: string;
+postalCode?: string;
 };

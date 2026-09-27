@@ -5,6 +5,8 @@ import { formatCurrency, formatRelativeTime, joinApi } from '@/lib/utils';
 import { Search as SearchIcon, Filter, MapPin, Heart } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useState, useEffect } from 'react';
+import { LocationFields } from '@/components/LocationFields';
+import type { ListingLocation } from '@/lib/location';
 
 export default function Search() {
   const { t, language } = useI18n();
@@ -15,21 +17,63 @@ export default function Search() {
   const category = urlParams.get('category') || '';
   
   const [searchQuery, setSearchQuery] = useState(q);
+  const [locationFilters, setLocationFilters] = useState<ListingLocation>({
+    country: urlParams.get('country') || '',
+    city: urlParams.get('city') || '',
+    region: urlParams.get('region') || '',
+    postalCode: urlParams.get('postalCode') || '',
+  });
+  const [showLocationFilters, setShowLocationFilters] = useState(
+    Boolean(urlParams.get('country') || urlParams.get('city') || urlParams.get('region') || urlParams.get('postalCode')),
+  );
 
   useEffect(() => {
     setSearchQuery(q);
   }, [q]);
 
-  const { data: listingsData, isLoading } = useListListings({ q, categoryId: category ? Number(category) : undefined });
+  useEffect(() => {
+    setLocationFilters({
+      country: urlParams.get('country') || '',
+      city: urlParams.get('city') || '',
+      region: urlParams.get('region') || '',
+      postalCode: urlParams.get('postalCode') || '',
+    });
+  }, [searchString]);
+
+  const searchPath = (
+    queryValue: string,
+    categoryValue: string,
+    filters: ListingLocation,
+  ) => {
+    const params = new URLSearchParams();
+    if (queryValue.trim()) params.set('q', queryValue.trim());
+    if (categoryValue) params.set('category', categoryValue);
+    if (filters.country) params.set('country', filters.country);
+    if (filters.city.trim()) params.set('city', filters.city.trim());
+    if (filters.region.trim()) params.set('region', filters.region.trim());
+    if (filters.postalCode.trim()) params.set('postalCode', filters.postalCode.trim());
+    const queryString = params.toString();
+    return queryString ? `/search?${queryString}` : '/search';
+  };
+
+  const { data: listingsData, isLoading } = useListListings({
+    q,
+    categoryId: category ? Number(category) : undefined,
+    country: locationFilters.country || undefined,
+    city: locationFilters.city.trim() || undefined,
+    region: locationFilters.region.trim() || undefined,
+    postalCode: locationFilters.postalCode.trim() || undefined,
+  });
   const { data: categories } = useListCategories();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery) {
-      setLocation(`/search?q=${encodeURIComponent(searchQuery)}${category ? `&category=${category}` : ''}`);
-    } else {
-      setLocation(`/search${category ? `?category=${category}` : ''}`);
-    }
+    setLocation(searchPath(searchQuery, category, locationFilters));
+  };
+
+  const applyLocationFilters = () => {
+    setLocation(searchPath(searchQuery, category, locationFilters));
+    setShowLocationFilters(false);
   };
 
   return (
@@ -47,26 +91,50 @@ export default function Search() {
               className="w-full h-12 pl-12 pr-4 rounded-xl bg-muted border border-transparent focus:bg-background focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
             />
           </form>
-          <button className="w-12 h-12 shrink-0 rounded-xl border flex items-center justify-center hover:bg-muted text-foreground transition-colors">
+          <button
+            type="button"
+            aria-label={language === 'sv' ? 'Visa platsfilter' : 'Show location filters'}
+            aria-expanded={showLocationFilters}
+            onClick={() => setShowLocationFilters((visible) => !visible)}
+            className={`w-12 h-12 shrink-0 rounded-xl border flex items-center justify-center hover:bg-muted text-foreground transition-colors ${showLocationFilters ? 'border-primary text-primary' : ''}`}
+          >
             <Filter className="w-5 h-5" />
           </button>
         </div>
         
         {/* Quick filters */}
         <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
-          <Link href="/search" className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-colors ${!category ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'}`}>
+          <Link href={searchPath(searchQuery, '', locationFilters)} className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-colors ${!category ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'}`}>
             Alla
           </Link>
           {categories?.map(cat => (
             <Link 
               key={cat.id} 
-              href={`/search?category=${cat.id}${q ? `&q=${q}` : ''}`} 
+              href={searchPath(searchQuery, String(cat.id), locationFilters)}
               className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-colors ${category === String(cat.id) ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'}`}
             >
               {language === 'en' ? cat.nameEn : cat.nameSv}
             </Link>
           ))}
         </div>
+        {showLocationFilters ? (
+          <div className="rounded-xl border bg-card p-4">
+            <LocationFields
+              value={locationFilters}
+              onChange={setLocationFilters}
+              language={language}
+              idPrefix="search-location"
+              allowAnyCountry
+            />
+            <button
+              type="button"
+              onClick={applyLocationFilters}
+              className="mt-4 w-full h-11 rounded-xl bg-primary text-primary-foreground font-semibold"
+            >
+              {language === 'sv' ? 'Visa annonser här' : 'Show listings here'}
+            </button>
+          </div>
+        ) : null}
       </div>
 
       {/* Results */}

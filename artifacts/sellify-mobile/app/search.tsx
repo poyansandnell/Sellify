@@ -20,6 +20,8 @@ import { useColors } from '@/hooks/useColors';
 import { useI18n } from '@/lib/i18n';
 import { ListingCard, ListingCardSkeleton } from '@/components/ListingCard';
 import { EmptyState } from '@/components/Ui';
+import { CountryPicker } from '@/components/CountryPicker';
+import { detectDeviceLocation, type DetectedLocation } from '@/lib/location';
 import colorsConst from '@/constants/colors';
 
 export default function SearchScreen() {
@@ -29,19 +31,67 @@ export default function SearchScreen() {
   const { t, language } = useI18n();
   const { width } = useWindowDimensions();
   const cardWidth = (width - 16 * 2 - 12) / 2;
-  const params = useLocalSearchParams<{ categoryId?: string }>();
+  const params = useLocalSearchParams<{
+    categoryId?: string;
+    country?: string;
+    city?: string;
+    region?: string;
+    postalCode?: string;
+  }>();
 
   const [query, setQuery] = useState('');
   const [categoryId, setCategoryId] = useState<number | undefined>(
     params.categoryId ? Number(params.categoryId) : undefined,
   );
+  const [locationFilters, setLocationFilters] = useState<DetectedLocation>({
+    country: typeof params.country === "string" ? params.country : "",
+    city: typeof params.city === "string" ? params.city : "",
+    region: typeof params.region === "string" ? params.region : "",
+    postalCode: typeof params.postalCode === "string" ? params.postalCode : "",
+  });
+  const [locationDraft, setLocationDraft] = useState(locationFilters);
+  const [showLocationFilters, setShowLocationFilters] = useState(
+    Boolean(params.country || params.city || params.region || params.postalCode),
+  );
+  const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState("");
 
   const { data: categories } = useListCategories();
   const { data, isLoading } = useListListings({
     ...(query.trim() ? { q: query.trim() } : {}),
     ...(categoryId ? { categoryId } : {}),
+    ...(locationFilters.country ? { country: locationFilters.country } : {}),
+    ...(locationFilters.city ? { city: locationFilters.city } : {}),
+    ...(locationFilters.region ? { region: locationFilters.region } : {}),
+    ...(locationFilters.postalCode
+      ? { postalCode: locationFilters.postalCode }
+      : {}),
     limit: 40,
   });
+
+  const useCurrentLocation = async () => {
+    setLocating(true);
+    setLocationError("");
+    try {
+      setLocationDraft(await detectDeviceLocation());
+    } catch (error) {
+      setLocationError(
+        error instanceof Error ? error.message : String(error),
+      );
+    } finally {
+      setLocating(false);
+    }
+  };
+
+  const applyLocation = () => {
+    setLocationFilters({
+      country: locationDraft.country.trim().toUpperCase(),
+      city: locationDraft.city.trim(),
+      region: locationDraft.region.trim(),
+      postalCode: locationDraft.postalCode.trim(),
+    });
+    setShowLocationFilters(false);
+  };
 
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
@@ -121,6 +171,117 @@ export default function SearchScreen() {
         />
       </View>
 
+      <View style={styles.locationSection}>
+        <Pressable
+          testID="location-filter-toggle"
+          accessibilityRole="button"
+          accessibilityState={{ expanded: showLocationFilters }}
+          onPress={() => setShowLocationFilters((visible) => !visible)}
+          style={[
+            styles.locationToggle,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <Feather name="map-pin" size={16} color={colors.primary} />
+          <Text style={[styles.locationToggleText, { color: colors.foreground }]}>
+            {locationFilters.city || locationFilters.country
+              ? [locationFilters.city, locationFilters.region, locationFilters.country]
+                  .filter(Boolean)
+                  .join(", ")
+              : language === "sv" ? "Välj land eller område" : "Choose country or area"}
+          </Text>
+          <Feather
+            name={showLocationFilters ? "chevron-up" : "chevron-down"}
+            size={16}
+            color={colors.mutedForeground}
+          />
+        </Pressable>
+        {showLocationFilters ? (
+          <View
+            style={[
+              styles.locationPanel,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <CountryPicker
+              testID="search-country"
+              value={locationDraft.country}
+              language={language}
+              allowEmpty
+              onChange={(country) =>
+                setLocationDraft((current) => ({ ...current, country }))
+              }
+            />
+            {(
+              [
+                ["city", language === "sv" ? "Stad" : "City"],
+                ["region", language === "sv" ? "Region eller delstat" : "Region or state"],
+                ["postalCode", language === "sv" ? "Postnummer" : "Postal code"],
+              ] as const
+            ).map(([key, label]) => (
+              <View key={key}>
+                <Text style={[styles.locationLabel, { color: colors.mutedForeground }]}>
+                  {label}
+                </Text>
+                <TextInput
+                  testID={`search-${key}`}
+                  value={locationDraft[key]}
+                  onChangeText={(value) =>
+                    setLocationDraft((current) => ({ ...current, [key]: value }))
+                  }
+                  placeholderTextColor={colors.mutedForeground}
+                  style={[
+                    styles.locationInput,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                      color: colors.foreground,
+                    },
+                  ]}
+                />
+              </View>
+            ))}
+            <Pressable
+              testID="search-use-location"
+              disabled={locating}
+              onPress={useCurrentLocation}
+              style={styles.useLocation}
+            >
+              <Feather name="crosshair" size={16} color={colors.primary} />
+              <Text style={[styles.useLocationText, { color: colors.primary }]}>
+                {locating
+                  ? language === "sv" ? "Hämtar plats…" : "Finding location…"
+                  : language === "sv" ? "Använd min plats" : "Use my location"}
+              </Text>
+            </Pressable>
+            <Text style={[styles.locationNote, { color: colors.mutedForeground }]}>
+              {language === "sv"
+                ? "GPS används bara när du trycker. Exakta koordinater sparas inte."
+                : "GPS is used only when you tap. Exact coordinates are not stored."}
+            </Text>
+            {Platform.OS === "web" ? (
+              <Text style={[styles.locationNote, { color: colors.mutedForeground }]}>
+                © OpenStreetMap contributors
+              </Text>
+            ) : null}
+            {locationError ? (
+              <Text testID="search-location-error" style={styles.locationError}>
+                {locationError}
+              </Text>
+            ) : null}
+            <Pressable
+              testID="apply-location-filter"
+              onPress={applyLocation}
+              style={[styles.applyLocation, { backgroundColor: colors.primary }]}
+            >
+              <Text style={[styles.applyLocationText, { color: colors.primaryForeground }]}>
+                {language === "sv" ? "Visa annonser här" : "Show listings here"}
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
+      </View>
+
       {isLoading ? (
         <View style={styles.grid}>
           {[0, 1, 2, 3].map((i) => (
@@ -172,6 +333,48 @@ const styles = StyleSheet.create({
   input: { flex: 1, fontSize: 15, fontFamily: 'Inter_400Regular' },
   chipsRow: { paddingBottom: 8 },
   chips: { gap: 8, paddingHorizontal: 16 },
+  locationSection: { paddingHorizontal: 16, paddingBottom: 10 },
+  locationToggle: {
+    minHeight: 42,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+  },
+  locationToggleText: { flex: 1, fontSize: 13, fontFamily: "Inter_500Medium" },
+  locationPanel: {
+    marginTop: 8,
+    padding: 12,
+    gap: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 14,
+  },
+  locationLabel: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    marginBottom: 4,
+  },
+  locationInput: {
+    height: 40,
+    paddingHorizontal: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 9,
+    fontSize: 14,
+  },
+  useLocation: { flexDirection: "row", alignItems: "center", gap: 7, paddingVertical: 3 },
+  useLocationText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  locationNote: { fontSize: 11, lineHeight: 15 },
+  locationError: { color: "#b91c1c", fontSize: 12 },
+  applyLocation: {
+    minHeight: 42,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+  },
+  applyLocationText: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
   chip: {
     paddingHorizontal: 14,
     height: 34,

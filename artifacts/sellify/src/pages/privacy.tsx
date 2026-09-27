@@ -23,7 +23,7 @@ export default function Privacy() {
         </button>
       </div>
       <p className="mb-8 text-sm text-muted-foreground">
-        {sv ? 'Senast uppdaterad: 23 augusti 2026' : 'Last updated: August 23, 2026'}
+        {sv ? 'Senast uppdaterad: 27 september 2026' : 'Last updated: September 27, 2026'}
       </p>
 
       {sv ? (
@@ -46,7 +46,7 @@ export default function Privacy() {
                 <strong>Moderering och säkerhetsdata</strong> – register över anmälningar (rapporter), blockeringar mellan användare och loggar från vår automatiserade innehållsgranskning på servern lagras för att upprätthålla trygghet och efterleva våra säkerhetskrav (UGC).
               </li>
               <li>
-                <strong>Plats (frivilligt)</strong> – om du ger tillåtelse används telefonens plats endast för att föreslå rätt stad i dina annonser. Din exakta position lagras aldrig.
+                <strong>Plats (frivilligt)</strong> – plats anges manuellt som standard. Endast när du trycker på ”Använd min plats” används enhetens position för att föreslå stad, region, land och postnummer för sökning eller annons. Sellify sparar inte exakta koordinater. I webbläsaren skickas koordinaterna till OpenStreetMap Nominatim för platsuppslag.
               </li>
               <li>
                 <strong>Röstanteckningar (frivilligt)</strong> – om du använder mikrofonen transkriberas ljudet för att fylla i annonsen. Ljudfilen sparas inte efter transkriberingen.
@@ -61,7 +61,7 @@ export default function Privacy() {
             Din modereringsdata och rapporteringshistorik används exklusivt för vår automatiserade serverbaserade säkerhetskontroll och manuella granskning, i syfte att identifiera och ta bort olämpligt beteende. Vi säljer aldrig dina personuppgifter och visar ingen reklam baserad på dem.
           </Section>
           <Section title="4. Delning med tredje part">
-            Uppgifter delas endast med de leverantörer som krävs för att driva tjänsten: inloggning (Clerk), lagring av bilder, AI-tjänst för annonsförslag, transkribering och säkerhetsgranskning, samt pushnotiser (Expo/Apple/Google). Dessa behandlar uppgifterna för vår räkning.
+            Uppgifter delas endast med de leverantörer som krävs för att driva tjänsten: inloggning (Clerk), lagring av bilder, AI-tjänst för annonsförslag, transkribering och säkerhetsgranskning, samt pushnotiser (Expo/Apple/Google). Om du trycker på ”Använd min plats” i webben får OpenStreetMap Nominatim koordinaterna för att hitta platsen; i mobilappen används enhetens plats- och uppslagstjänst. Tjänsterna behandlar uppgifterna enligt sina egna villkor och integritetspolicyer.
           </Section>
           <Section title="5. Lagring och radering">
             Uppgifterna sparas så länge du har ett konto. Du kan när som helst ta bort dina annonser i appen. Vill du radera hela ditt konto och tillhörande uppgifter, kontakta oss så raderar vi dem utan onödigt dröjsmål. Data kopplad till allvarliga regelbrott kan behållas under en begränsad tid av säkerhets- och lagliga skäl.
@@ -105,7 +105,7 @@ export default function Privacy() {
                 <strong>Moderation and safety data</strong> – records of reports, blocks between users, and logs from our automated server-side content screening are stored to maintain safety and comply with our UGC moderation requirements.
               </li>
               <li>
-                <strong>Location (optional)</strong> – with your permission, your device location is used only to suggest the right city for your listings. Your exact position is never stored.
+                <strong>Location (optional)</strong> – location is entered manually by default. Only after you tap “Use my location” does the device position help suggest a city, region, country and postal code for search or a listing. Sellify does not store exact coordinates. In the web app, coordinates are sent to OpenStreetMap Nominatim for reverse geocoding.
               </li>
               <li>
                 <strong>Voice notes (optional)</strong> – if you use the microphone, the audio is transcribed to help fill in your listing. The audio file is not kept after transcription.
@@ -120,7 +120,7 @@ export default function Privacy() {
             Your moderation data and report history are strictly used for our automated server-side safety checks and manual reviews, to identify and remove inappropriate behavior. We never sell your personal data and show no ads based on it.
           </Section>
           <Section title="4. Sharing with third parties">
-            Data is only shared with the providers required to run the service: sign-in (Clerk), image storage, the AI service used for listing suggestions, transcription, and safety screening, as well as push notifications (Expo/Apple/Google). They process the data on our behalf.
+            Data is only shared with the providers required to run the service: sign-in (Clerk), image storage, the AI service used for listing suggestions, transcription, and safety screening, as well as push notifications (Expo/Apple/Google). When you tap “Use my location” on the web, OpenStreetMap Nominatim receives coordinates to resolve the locality; the mobile app uses the device's location and geocoding service. These services process data under their own terms and privacy policies.
           </Section>
           <Section title="5. Retention and deletion">
             Data is kept for as long as you have an account. You can delete your listings in the app at any time. To delete your entire account and associated data, contact us and we will erase it without undue delay. Data related to severe terms violations may be retained for a limited time for safety and legal reasons.
