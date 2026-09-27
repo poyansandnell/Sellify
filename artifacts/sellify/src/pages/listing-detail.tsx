@@ -58,7 +58,26 @@ export default function ListingDetail() {
   }
 
   if (!listing) {
-    return <div className="p-8 text-center">Hittades inte</div>;
+    return (
+      <main className="min-h-[60vh] px-6 py-16 flex flex-col items-center justify-center text-center">
+        <h1 className="max-w-xl text-2xl md:text-3xl font-display font-bold">
+          {language === 'sv'
+            ? 'Den här varan är såld eller inte längre tillgänglig'
+            : 'This item has sold or is no longer available'}
+        </h1>
+        <p className="mt-3 max-w-lg text-muted-foreground">
+          {language === 'sv'
+            ? 'Annonsen kan ha tagits bort eller sålts. Se aktuella annonser för fler fynd.'
+            : 'The listing may have been removed or sold. Browse current listings to find more.'}
+        </p>
+        <Link
+          href="/"
+          className="mt-6 inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-5 font-semibold text-primary-foreground"
+        >
+          {language === 'sv' ? 'Se aktuella annonser' : 'Browse current listings'}
+        </Link>
+      </main>
+    );
   }
 
   return (

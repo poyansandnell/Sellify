@@ -6,7 +6,7 @@ import { getUserId } from "../lib/auth";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
-const PRODUCTION_ORIGIN = "https://attached-assets-poyansandnell.replit.app";
+const PRODUCTION_ORIGIN = "https://sellifyai.sale";
 const CATEGORY_INDEX_THRESHOLD = 5;
 const SITEMAP_LISTINGS_PER_FILE = 45_000;
 
@@ -56,7 +56,11 @@ function siteOrigin(req: Request): string {
 
   const forwardedHost = req.get("x-forwarded-host")?.split(",")[0]?.trim();
   const host = forwardedHost || req.get("host");
-  if (host && /^[a-z0-9.-]+(?::\d+)?$/i.test(host)) {
+  if (
+    process.env.NODE_ENV !== "production" &&
+    host &&
+    /^[a-z0-9.-]+(?::\d+)?$/i.test(host)
+  ) {
     const forwardedProtocol = req
       .get("x-forwarded-proto")
       ?.split(",")[0]

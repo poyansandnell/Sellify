@@ -25,7 +25,7 @@ export default function Home() {
       description: isSwedish
         ? 'Köp och sälj begagnat på Sellify. Hitta saker nära dig, upptäck aktuella annonser och kontakta säljare direkt.'
         : 'Buy and sell second-hand on Sellify. Find items nearby, browse current listings and contact sellers directly.',
-      canonical: `${window.location.origin}/`,
+      canonical: `${import.meta.env.VITE_SELLIFY_SITE_ORIGIN || 'https://sellifyai.sale'}/`,
     });
   }, [language]);
 
