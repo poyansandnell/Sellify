@@ -4,11 +4,16 @@ import { db } from "@workspace/db";
 import { categories, listings, profiles } from "@workspace/db/schema";
 import { getUserId } from "../lib/auth";
 import { logger } from "../lib/logger";
+import {
+  getListingSitemapPageCount,
+  getListingSitemapPageOffset,
+  isValidSitemapPage,
+  SITEMAP_LISTINGS_PER_FILE,
+} from "../lib/seo-sitemap";
 
 const router: IRouter = Router();
 const PRODUCTION_ORIGIN = "https://sellifyai.sale";
 const CATEGORY_INDEX_THRESHOLD = 5;
-const SITEMAP_LISTINGS_PER_FILE = 45_000;
 
 type ListingSeoRow = {
   listing: typeof listings.$inferSelect;
@@ -563,7 +568,7 @@ router.get("/sitemap.xml", async (req: Request, res: Response) => {
           isNull(profiles.suspendedAt),
         ),
       );
-    const listingSitemapCount = Math.ceil(total / SITEMAP_LISTINGS_PER_FILE);
+    const listingSitemapCount = getListingSitemapPageCount(total);
     const lastmod = new Date().toISOString();
     const sitemaps = [
       `<sitemap><loc>${escapeXml(`${origin}/sitemap-static.xml`)}</loc><lastmod>${lastmod}</lastmod></sitemap>`,
@@ -633,7 +638,7 @@ router.get("/sitemap-static.xml", async (req: Request, res: Response) => {
 
 router.get("/sitemap-listings/:page.xml", async (req: Request, res: Response) => {
   const page = Number(req.params.page);
-  if (!Number.isSafeInteger(page) || page < 0) {
+  if (!isValidSitemapPage(page)) {
     res.status(404).type("text/plain").send("Sitemap page not found");
     return;
   }
@@ -656,7 +661,7 @@ router.get("/sitemap-listings/:page.xml", async (req: Request, res: Response) =>
       )
       .orderBy(asc(listings.id))
       .limit(SITEMAP_LISTINGS_PER_FILE)
-      .offset(page * SITEMAP_LISTINGS_PER_FILE);
+      .offset(getListingSitemapPageOffset(page));
     const urls = rows.map(({ slug, lastModified }) => {
       const lastmod = lastModified
         ? `<lastmod>${lastModified.toISOString()}</lastmod>`
