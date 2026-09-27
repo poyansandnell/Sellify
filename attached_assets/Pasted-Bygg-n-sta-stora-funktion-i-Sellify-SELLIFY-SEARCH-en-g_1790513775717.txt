@@ -1,0 +1,579 @@
+Bygg nästa stora funktion i Sellify:
+
+SELLIFY SEARCH – en global annonsaggregator för begagnade produkter, fordon och andra marknadsplatser.
+
+Grundidén är ungefär:
+
+"Booli för allt"
+
+Sellify ska kunna samla annonser från många externa källor, normalisera informationen och göra allt sökbart i ett gemensamt gränssnitt.
+
+VIKTIG PRINCIP
+
+Vi ska INTE bygga ett system som olovligen kopierar andra marknadsplatsers innehåll.
+
+Källor ska delas upp i fyra typer:
+
+1. OFFICIELLT API
+2. PARTNER-/FEED-INTEGRATION
+3. TILLÅTEN INDEXERING AV ORIGINALKÄLLOR
+4. EJ TILLÅTEN / KRÄVER AVTAL
+
+Systemet måste respektera respektive sajts användarvillkor, robots-regler, API-villkor, copyright och rate limits.
+
+Använd aldrig:
+- inloggningsbypass
+- CAPTCHA-bypass
+- proxyrotation för att kringgå blockering
+- automatiserad scraping av sajter som förbjuder det
+- privata API:er
+- reverse engineering av autentisering
+- automatiserad kopiering av hela annonser om vi saknar rättighet
+
+Om en källa förbjuder scraping ska adaptern markeras som:
+REQUIRES_PARTNERSHIP
+
+och inte aktiveras automatiskt.
+
+==================================================
+1. ÖVERGRIPANDE ARKITEKTUR
+==================================================
+
+Bygg Sellify Search som ett adaptersystem.
+
+Varje extern källa ska ha en egen adapter.
+
+Exempel:
+
+sources/
+  tradera/
+  ebay/
+  blocket/
+  wayke/
+  craigslist/
+  cars/
+  autotrader/
+  zillow/
+  redfin/
+  realtor/
+  mls/
+  brokers/
+  dealers/
+  auctions/
+
+Varje adapter ska implementera samma interface:
+
+- sourceId
+- sourceName
+- country
+- sourceType
+- enabled
+- requiresApiKey
+- requiresPartnership
+- fetchListings()
+- fetchListing()
+- normalizeListing()
+- refreshListing()
+- markUnavailable()
+- getOriginalUrl()
+
+sourceType ska vara:
+
+API
+FEED
+INDEX
+PARTNERSHIP_REQUIRED
+DISABLED
+
+==================================================
+2. KÄLLOR – SVERIGE
+==================================================
+
+Förbered stöd för följande:
+
+TRADERA
+Typ:
+API
+
+Prioritet:
+MYCKET HÖG
+
+Använd endast officiellt Tradera API.
+
+Importera där API:t tillåter:
+- titel
+- pris
+- bilder
+- kategori
+- skick
+- ort
+- säljinformation där tillåtet
+- auktion/fasta priser
+- sluttid
+- original-URL
+
+Skapa ingen alternativ scraper för Tradera.
+
+------------------------------------------
+
+BLOCKET
+Typ:
+PARTNERSHIP_REQUIRED
+
+Blocket ska finnas som adapter men vara avstängd som standard.
+
+Skrapa inte Blocket.
+
+Förbered istället stöd för framtida:
+- officiellt API
+- kommersiell feed
+- partnerskap
+- import från professionella handlare
+
+Admin ska kunna se:
+"Integration requires agreement with Blocket."
+
+------------------------------------------
+
+WAYKE
+Typ:
+FEED / PARTNERSHIP
+
+Förbered integration för fordonsannonser.
+
+Möjliga datakällor:
+- handlarfeeds
+- API
+- kommersiellt partnerskap
+
+Normalisera:
+- bilmärke
+- modell
+- årsmodell
+- miltal
+- drivmedel
+- växellåda
+- pris
+- ort
+- handlare
+- bilder
+- original-URL
+
+------------------------------------------
+
+SVENSKA BILHANDLARE
+
+Bygg möjlighet att ansluta individuella bilhandlares webbplatser.
+
+Prioritera:
+- strukturerad data
+- XML-feed
+- JSON-feed
+- sitemap
+- Schema.org Vehicle/Product
+- API
+
+Indexera endast om sajten tillåter det.
+
+------------------------------------------
+
+SVENSKA MÄKLARES EGNA WEBBPLATSER
+
+Förbered samma princip som Booli:
+
+Indexera mäklarens egen publika bostadssida där det är tillåtet.
+
+Normalisera:
+- adress
+- kommun
+- område
+- bostadstyp
+- antal rum
+- boarea
+- tomtarea
+- pris
+- månadsavgift
+- mäklare
+- bilder där användning är tillåten
+- original-URL
+
+Prioritera feeds och strukturerad data framför HTML-scraping.
+
+------------------------------------------
+
+HEMNET
+Typ:
+PARTNERSHIP_REQUIRED / DISABLED
+
+Bygg ingen scraper.
+
+Ha endast adapter-placeholder för framtida avtal/API.
+
+------------------------------------------
+
+AUKTIONSHUS
+
+Förbered generisk adapter för svenska auktionshus.
+
+Exempel på typer:
+- möbler
+- konst
+- samlarobjekt
+- fordon
+- maskiner
+- konkurspartier
+
+Stöd:
+- RSS
+- XML
+- JSON
+- API
+- tillåten indexering
+
+------------------------------------------
+
+SECONDHAND-BUTIKER / PANTBANKER / RETAILERS
+
+Förbered generisk feed-adapter för:
+- begagnad elektronik
+- cyklar
+- verktyg
+- möbler
+- barnprodukter
+- kläder
+- klockor
+- instrument
+
+==================================================
+3. KÄLLOR – USA
+==================================================
+
+EBAY
+Typ:
+API
+
+Prioritet:
+MYCKET HÖG
+
+Använd officiella eBay Developer API:er.
+
+Normalisera:
+- title
+- price
+- currency
+- condition
+- images
+- seller
+- location
+- shipping
+- category
+- listing type
+- original URL
+
+------------------------------------------
+
+CRAIGSLIST
+Typ:
+PARTNERSHIP_REQUIRED / DISABLED
+
+Ingen scraping.
+
+Förbered endast adapter för framtida licens/partnerskap/feed.
+
+------------------------------------------
+
+CARS.COM
+Typ:
+PARTNERSHIP_REQUIRED
+
+Ingen automatiserad scraping om inte skriftligt tillstånd finns.
+
+Förbered adapter för:
+- feed
+- API
+- dealer integrations
+
+------------------------------------------
+
+AUTOTRADER
+Typ:
+PARTNERSHIP / FEED
+
+Förbered bilfeed-integration.
+
+------------------------------------------
+
+ZILLOW
+Typ:
+LICENSED_DATA / PARTNERSHIP
+
+Ingen egen aggressiv scraping.
+
+Förbered integration via:
+- licensierad data
+- godkända feeds
+- partnerskap
+
+------------------------------------------
+
+REDFIN
+Typ:
+PARTNERSHIP_REQUIRED / DISABLED
+
+Ingen scraping utan uttryckligt tillstånd.
+
+------------------------------------------
+
+REALTOR.COM
+Typ:
+PARTNERSHIP / LICENSED_DATA
+
+Förbered integration men inte aktiv scraper.
+
+------------------------------------------
+
+MLS
+Typ:
+LICENSED_FEED
+
+Bygg en generell MLS-adapter.
+
+Den ska kunna hantera feeds från olika MLS-leverantörer.
+
+==================================================
+4. GENERISK INDEXERINGSMOTOR
+==================================================
+
+Bygg en generisk indexeringsmotor för sajter där indexering uttryckligen är tillåten.
+
+Prioritetsordning:
+
+1. API
+2. JSON feed
+3. XML feed
+4. RSS
+5. Sitemap
+6. Schema.org JSON-LD
+7. Publik HTML
+
+HTML ska vara sista alternativet.
+
+Före HTML-indexering:
+
+- kontrollera source configuration
+- kontrollera robots.txt
+- kontrollera admin-status
+- kontrollera rate limit
+- kontrollera att sourceType = INDEX
+- kontrollera att legalApproval = true
+
+Ingen källa får börja crawlas bara för att URL:en fungerar.
+
+==================================================
+5. SOURCE REGISTRY
+==================================================
+
+Skapa tabell:
+
+external_sources
+
+Fält:
+
+id
+name
+country
+base_url
+source_type
+enabled
+legal_status
+terms_url
+robots_url
+api_docs_url
+api_key_required
+partnership_required
+refresh_interval
+rate_limit
+last_success
+last_failure
+last_error
+created_at
+updated_at
+
+legal_status:
+
+APPROVED
+REVIEW_REQUIRED
+PARTNERSHIP_REQUIRED
+DISABLED
+
+==================================================
+6. NORMALISERAD ANNONS
+==================================================
+
+Skapa en gemensam modell:
+
+external_listings
+
+Fält minst:
+
+id
+source_id
+external_id
+original_url
+title
+description
+category
+subcategory
+brand
+model
+condition
+price
+currency
+country
+region
+city
+postal_code
+latitude
+longitude
+seller_name
+seller_type
+shipping_available
+auction
+auction_end
+published_at
+updated_at
+last_seen_at
+status
+raw_data_hash
+
+status:
+
+ACTIVE
+SOLD
+REMOVED
+UNKNOWN
+
+==================================================
+7. BILDER
+==================================================
+
+VIKTIGT:
+
+Ladda inte automatiskt ner och återpublicera externa bilder om licensen inte tillåter det.
+
+Stöd tre lägen per källa:
+
+IMAGE_PROXY_ALLOWED
+IMAGE_URL_ONLY
+NO_EXTERNAL_IMAGES
+
+Om rättigheter saknas:
+- använd extern bild-URL endast om hotlinking är tillåten
+- annars visa neutral placeholder
+- länka alltid till originalannons
+
+Sellifys egna annonser behåller full bildfunktion.
+
+==================================================
+8. SELLIFY-SÖKNING
+==================================================
+
+På startsidan ska användaren kunna söka över:
+
+- Sellifys egna annonser
+- externa annonser
+
+Visa gemensamt resultat.
+
+Exempel:
+
+"iPhone 16 Pro"
+
+Resultat:
+
+Sellify
+Tradera
+eBay
+Bilhandlare
+Secondhandbutik
+
+Varje extern annons ska tydligt visa källa:
+
+"Via Tradera"
+"Via eBay"
+
+och knapp:
+
+"Visa originalannons"
+
+==================================================
+9. DEDUPLICERING
+==================================================
+
+Samma produkt kan finnas på flera sajter.
+
+Bygg deduplicering baserat på:
+
+- titel
+- brand
+- model
+- pris
+- bilder/image hashes när tillåtet
+- seller
+- location
+- GTIN/EAN/ISBN/VIN
+- timestamps
+
+Skapa möjlighet att gruppera:
+
+"Samma produkt finns på 3 marknadsplatser"
+
+Visa då:
+
+Tradera 8 900 kr
+eBay 8 700 kr
+Sellify 8 500 kr
+
+==================================================
+10. AI-NORMALISERING
+==================================================
+
+AI ska kunna normalisera olika annonser till samma struktur.
+
+Exempel:
+
+"Apple iPhone 15PM 256 blk"
+
+ska kunna normaliseras till:
+
+Brand:
+Apple
+
+Model:
+iPhone 15 Pro Max
+
+Storage:
+256 GB
+
+Color:
+Black
+
+Kategori:
+Phones
+
+AI får inte hitta på saknade fakta.
+
+Markera confidence.
+
+==================================================
+11. PRISJÄMFÖRELSE
+==================================================
+
+Skapa funktion:
+
+"Jämför pris"
+
+För en produkt ska Sellify kunna visa:
+
+- medianpris
+- lä
