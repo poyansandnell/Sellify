@@ -16,7 +16,6 @@ import {
 const router: IRouter = Router();
 const PRODUCTION_ORIGIN = "https://sellifyai.sale";
 const CATEGORY_INDEX_THRESHOLD = 5;
-const LOCATION_INDEX_THRESHOLD = 5;
 
 function countryName(countryCode: string, locale: string): string {
   try {
@@ -641,10 +640,7 @@ router.get(
         <section class="listing-grid" aria-label="${isSwedish ? "Aktuella annonser" : "Current listings"}">${cards}</section>
         <section class="app-cta" aria-labelledby="app-cta-title"><h2 id="app-cta-title">${isSwedish ? "Använd Sellify på mobilen" : "Use Sellify on mobile"}</h2><p>${isSwedish ? "Få tillgång till annonser och meddelanden när du är på språng." : "Browse listings and messages while you are on the go."}</p><div class="store-links">${storeLinksMarkup()}</div></section>
       </main>`;
-      const indexable = isLocationPageIndexable(
-        rows.length,
-        LOCATION_INDEX_THRESHOLD,
-      );
+      const indexable = isLocationPageIndexable(rows.length);
 
       res
         .status(200)
@@ -747,10 +743,7 @@ router.get("/sitemap-static.xml", async (req: Request, res: Response) => {
           sql`trim(${listings.city}) <> ''`,
         ),
       )
-      .groupBy(listings.country, listings.region, listings.city)
-      .having(
-        gte(sql`count(${listings.id})`, LOCATION_INDEX_THRESHOLD),
-      );
+      .groupBy(listings.country, listings.region, listings.city);
 
     const fixedPages = ["/", "/support", "/terms", "/privacy"];
     const urls = [

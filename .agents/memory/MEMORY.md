@@ -2,4 +2,4 @@
 - [Clerk proxy on native](clerk-native-proxy.md) — @clerk/clerk-expo v2 ignores proxyUrl on native (proven in source); managed-Clerk prod auth needs @clerk/expo v3 + Core v3 Future API.
 - [GitHub connector Git Data](github-connector-git-data.md) — nullable Git objects can break durable replay; use a fresh connector subagent and verify tree identity before syncing local refs.
 - [Artifact path routing](artifact-path-routing.md) — declare exact XML routes and sibling route prefixes separately; a shared `/sitemap` prefix did not catch `.xml` paths.
-- [Sellify location lookup](sellify-location-lookup.md) — keep location manual by default; only request GPS and reverse-geocode after an explicit user tap.
+- [Sellify location lookup](sellify-location-lookup.md) — manual location and tap-only GPS; local SEO uses one shared page per unique place from its first eligible listing.

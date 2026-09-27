@@ -49,8 +49,9 @@ describe("location sitemap pages", () => {
     );
   });
 
-  it("only indexes locations with enough active listings", () => {
-    assert.equal(isLocationPageIndexable(4), false);
+  it("indexes a location once it has an active listing", () => {
+    assert.equal(isLocationPageIndexable(0), false);
+    assert.equal(isLocationPageIndexable(1), true);
     assert.equal(isLocationPageIndexable(5), true);
     assert.equal(isLocationPageIndexable(Number.NaN), false);
   });

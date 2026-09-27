@@ -28,9 +28,6 @@ export function getLocationSitemapPath(
   return `/location/${encodeURIComponent(country.toUpperCase())}/${encodeURIComponent(region?.trim() || "_")}/${encodeURIComponent(city.trim())}`;
 }
 
-export function isLocationPageIndexable(
-  listingCount: number,
-  threshold = 5,
-): boolean {
-  return Number.isSafeInteger(listingCount) && listingCount >= threshold;
+export function isLocationPageIndexable(listingCount: number): boolean {
+  return Number.isSafeInteger(listingCount) && listingCount >= 1;
 }
